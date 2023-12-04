@@ -70,9 +70,53 @@ class MyServer(BaseHTTPRequestHandler):
         self.wfile.write(bytes(json.dumps(currencies_list, indent=2), "utf-8"))
 
 
+def init_database_if_not_exists():
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS "currency" (
+            "id"    INTEGER,
+            "code"	TEXT,
+            "full_name"	TEXT,
+            "sign"	TEXT,
+            PRIMARY KEY("id")
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS "exchange_rate" (
+            "id"	INTEGER,
+            "base_currency_id"	INTEGER,
+            "target_currency_id"	INTEGER,
+            "rate"	NUMERIC,
+            FOREIGN KEY("base_currency_id") REFERENCES "currency"("id"),
+            FOREIGN KEY("target_currency_id") REFERENCES "currency"("id"),
+            PRIMARY KEY("id")
+        )
+    """)
+
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS "idx_code" ON "currency" (
+            "code"
+        )
+    """)
+
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS "idx_currency_pair" ON "exchange_rate" (
+            "base_currency_id",
+            "target_currency_id"
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS "idx_id" ON "currency" (
+            "id"
+        )
+    """)
+
+
 if __name__ == "__main__":
     connection = sqlite3.connect("exchange.sqlite")
     cursor = connection.cursor()
+    init_database_if_not_exists()
+
     webServer = HTTPServer((hostName, serverPort), MyServer)
     print("Server started http://%s:%s" % (hostName, serverPort))
 
