@@ -10,11 +10,9 @@ serverPort = 8080
 def exchange_rates_tuple_to_list_of_dicts(exchange_rates):
     exchange_rates_list = []
     for exchange_rate in exchange_rates:
-        base_currency_tuple = cursor.execute("SELECT * FROM currency WHERE id = ?",
-                                             (exchange_rate[1],)).fetchone()
+        base_currency_tuple = cursor.execute("SELECT * FROM currency WHERE id = ?", (exchange_rate[1],)).fetchone()
         base_currency_json = currencies_tuple_to_list_of_dicts([base_currency_tuple])
-        target_currency_tuple = cursor.execute("SELECT * FROM currency WHERE id = ?",
-                                               (exchange_rate[2],)).fetchone()
+        target_currency_tuple = cursor.execute("SELECT * FROM currency WHERE id = ?", (exchange_rate[2],)).fetchone()
         target_currency_json = currencies_tuple_to_list_of_dicts([target_currency_tuple])
 
         exchange_rate_dict = {
@@ -47,12 +45,31 @@ class MyServer(BaseHTTPRequestHandler):
             self.get_currencies()
         elif self.path == '/api/exchangeRates':
             self.get_exchange_rates()
+        elif re.search("/api/exchangeRate/.+", self.path):
+            currency_pair = self.path.split("/")[-1]
+            base_currency = currency_pair[:3]
+            target_currency = currency_pair[3:]
+            self.get_exchange_rate(base_currency, target_currency)    
         elif re.search("/api/currency/.+", self.path):
             currency = self.path.split("/")[-1]
             self.get_currency(currency)
         else:
             self.send_response(400)
             self.end_headers()
+
+    def get_exchange_rate(self, base_currency, target_currency):
+        cursor.execute("""
+            SELECT er.*
+            FROM exchange_rate AS er
+            JOIN currency AS c1 ON er.base_currency_id = c1.id
+            JOIN currency AS c2 ON er.target_currency_id = c2.id
+            WHERE c1.code = ? AND c2.code = ?
+        """, (base_currency, target_currency))
+        exchange_rate = cursor.fetchone()
+        exchange_rate_dicts = exchange_rates_tuple_to_list_of_dicts([exchange_rate])
+
+        self.send_200_json_headers()
+        self.wfile.write(bytes(json.dumps(exchange_rate_dicts, indent=2), "utf-8"))
 
     def get_exchange_rates(self):
         cursor.execute("SELECT * FROM exchange_rate")
@@ -85,44 +102,69 @@ class MyServer(BaseHTTPRequestHandler):
 
 
 def init_database_if_not_exists():
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS "currency" (
-            "id"    INTEGER,
-            "code"	TEXT,
-            "full_name"	TEXT,
-            "sign"	TEXT,
-            PRIMARY KEY("id")
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS "exchange_rate" (
-            "id"	INTEGER,
-            "base_currency_id"	INTEGER,
-            "target_currency_id"	INTEGER,
-            "rate"	NUMERIC,
-            FOREIGN KEY("base_currency_id") REFERENCES "currency"("id"),
-            FOREIGN KEY("target_currency_id") REFERENCES "currency"("id"),
-            PRIMARY KEY("id")
-        )
-    """)
+    # cursor.execute("""
+    #     CREATE TABLE IF NOT EXISTS "currency" (
+    #         "id"    INTEGER,
+    #         "code"	TEXT,
+    #         "full_name"	TEXT,
+    #         "sign"	TEXT,
+    #         PRIMARY KEY("id")
+    #     )
+    # """)
+    # cursor.execute("""
+    #     CREATE TABLE IF NOT EXISTS "exchange_rate" (
+    #         "id"	INTEGER,
+    #         "base_currency_id"	INTEGER,
+    #         "target_currency_id"	INTEGER,
+    #         "rate"	NUMERIC,
+    #         FOREIGN KEY("base_currency_id") REFERENCES "currency"("id"),
+    #         FOREIGN KEY("target_currency_id") REFERENCES "currency"("id"),
+    #         PRIMARY KEY("id")
+    #     )
+    # """)
 
-    cursor.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS "idx_code" ON "currency" (
-            "code"
-        )
-    """)
+    # cursor.execute("""
+    #     CREATE UNIQUE INDEX IF NOT EXISTS "idx_code" ON "currency" (
+    #         "code"
+    #     )
+    # """)
 
-    cursor.execute("""
-        CREATE UNIQUE INDEX IF NOT EXISTS "idx_currency_pair" ON "exchange_rate" (
-            "base_currency_id",
-            "target_currency_id"
-        )
-    """)
+    # cursor.execute("""
+    #     CREATE UNIQUE INDEX IF NOT EXISTS "idx_currency_pair" ON "exchange_rate" (
+    #         "base_currency_id",
+    #         "target_currency_id"
+    #     )
+    # """)
 
-    cursor.execute("""
-        CREATE INDEX IF NOT EXISTS "idx_id" ON "currency" (
-            "id"
-        )
+    # cursor.execute("""
+    #     CREATE INDEX IF NOT EXISTS "idx_id" ON "currency" (
+    #         "id"
+    #     )
+    # """)
+
+    cursor.executescript("""
+        CREATE TABLE IF NOT EXISTS currency (
+            id INTEGER PRIMARY KEY,
+            code TEXT,
+            full_name TEXT,
+            sign TEXT
+        );
+    
+        CREATE TABLE IF NOT EXISTS exchange_rate (
+            id INTEGER PRIMARY KEY,
+            base_currency_id INTEGER REFERENCES currency(id),
+            target_currency_id INTEGER REFERENCES currency(id),
+            rate NUMERIC
+        );
+    
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_code ON currency(code);
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_currency_pair ON exchange_rate (
+            base_currency_id,
+            target_currency_id
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_id ON currency(id);
     """)
 
 
@@ -132,7 +174,7 @@ if __name__ == "__main__":
     init_database_if_not_exists()
 
     webServer = HTTPServer((hostName, serverPort), MyServer)
-    print("Server started http://%s:%s" % (hostName, serverPort))
+    print(f"Server started http://{hostName}:{serverPort}")
 
     try:
         webServer.serve_forever()
