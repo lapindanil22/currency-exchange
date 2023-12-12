@@ -2,6 +2,7 @@ import json
 import re
 import sqlite3
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib import parse
 
 hostName = "localhost"
 serverPort = 8080
@@ -49,13 +50,32 @@ class MyServer(BaseHTTPRequestHandler):
             currency_pair = self.path.split("/")[-1]
             base_currency = currency_pair[:3]
             target_currency = currency_pair[3:]
-            self.get_exchange_rate(base_currency, target_currency)    
+            self.get_exchange_rate(base_currency, target_currency)
+        elif re.search("/api/exchange\?.+", self.path):
+            query_dict = dict(parse.parse_qsl(parse.urlsplit(self.path).query))
+            self.exchange(query_dict["from"], query_dict["to"], query_dict["amount"])
         elif re.search("/api/currency/.+", self.path):
             currency = self.path.split("/")[-1]
             self.get_currency(currency)
         else:
             self.send_response(400)
             self.end_headers()
+
+    def exchange(self, from_currency, to_currency, amount):
+        cursor.execute("""
+            SELECT er.*
+            FROM exchange_rate AS er
+            JOIN currency AS c1 ON er.base_currency_id = c1.id
+            JOIN currency AS c2 ON er.target_currency_id = c2.id
+            WHERE c1.code = ? AND c2.code = ?
+        """, (from_currency, to_currency))
+        exchange_rate = cursor.fetchone()
+        exchange_rate_dict = exchange_rates_tuple_to_list_of_dicts([exchange_rate])[0]
+        exchange_rate_dict["amount"] = amount
+        exchange_rate_dict["convertedAmount"] = float(exchange_rate_dict["rate"]) * float(amount)
+
+        self.send_200_json_headers()
+        self.wfile.write(bytes(json.dumps(exchange_rate_dict, indent=2), "utf-8"))
 
     def get_exchange_rate(self, base_currency, target_currency):
         cursor.execute("""
@@ -66,10 +86,10 @@ class MyServer(BaseHTTPRequestHandler):
             WHERE c1.code = ? AND c2.code = ?
         """, (base_currency, target_currency))
         exchange_rate = cursor.fetchone()
-        exchange_rate_dicts = exchange_rates_tuple_to_list_of_dicts([exchange_rate])
+        exchange_rate_dict = exchange_rates_tuple_to_list_of_dicts([exchange_rate])[0]
 
         self.send_200_json_headers()
-        self.wfile.write(bytes(json.dumps(exchange_rate_dicts, indent=2), "utf-8"))
+        self.wfile.write(bytes(json.dumps(exchange_rate_dict, indent=2), "utf-8"))
 
     def get_exchange_rates(self):
         cursor.execute("SELECT * FROM exchange_rate")
