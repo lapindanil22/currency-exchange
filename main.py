@@ -42,9 +42,9 @@ def currencies_tuple_to_list_of_dicts(currencies):
 class MyServer(BaseHTTPRequestHandler):
 
     def do_GET(self):
-        if self.path == '/api/currencies':
+        if self.path == "/api/currencies":
             self.get_currencies()
-        elif self.path == '/api/exchangeRates':
+        elif self.path == "/api/exchangeRates":
             self.get_exchange_rates()
         elif re.search("/api/exchangeRate/.+", self.path):
             currency_pair = self.path.split("/")[-1]
@@ -53,7 +53,7 @@ class MyServer(BaseHTTPRequestHandler):
             self.get_exchange_rate(base_currency, target_currency)
         elif re.search("/api/exchange\?.+", self.path):
             query_dict = dict(parse.parse_qsl(parse.urlsplit(self.path).query))
-            self.exchange(query_dict["from"], query_dict["to"], query_dict["amount"])
+            self.get_exchange(query_dict["from"], query_dict["to"], query_dict["amount"])
         elif re.search("/api/currency/.+", self.path):
             currency = self.path.split("/")[-1]
             self.get_currency(currency)
@@ -61,7 +61,11 @@ class MyServer(BaseHTTPRequestHandler):
             self.send_response(400)
             self.end_headers()
 
-    def exchange(self, from_currency, to_currency, amount):
+    def do_POST(self):
+        if self.path == "/api/currencies":
+            self.post_currency()
+
+    def get_exchange(self, from_currency, to_currency, amount):
         cursor.execute("""
             SELECT er.*
             FROM exchange_rate AS er
@@ -72,7 +76,7 @@ class MyServer(BaseHTTPRequestHandler):
         exchange_rate = cursor.fetchone()
         exchange_rate_dict = exchange_rates_tuple_to_list_of_dicts([exchange_rate])[0]
         exchange_rate_dict["amount"] = amount
-        exchange_rate_dict["convertedAmount"] = float(exchange_rate_dict["rate"]) * float(amount)
+        exchange_rate_dict["convertedAmount"] = round(float(exchange_rate_dict["rate"]) * float(amount), 2)
 
         self.send_200_json_headers()
         self.wfile.write(bytes(json.dumps(exchange_rate_dict, indent=2), "utf-8"))
