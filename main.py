@@ -4,16 +4,18 @@ import sqlite3
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib import parse
 
-hostName = "localhost"
+hostName = "localhost"  # Or "0.0.0.0" to be able to see server in whole LAN
 serverPort = 8080
 
 
 def exchange_rates_tuple_to_list_of_dicts(exchange_rates):
     exchange_rates_list = []
     for exchange_rate in exchange_rates:
-        base_currency_tuple = cursor.execute("SELECT * FROM currency WHERE id = ?", (exchange_rate[1],)).fetchone()
+        base_currency_tuple = cursor.execute(
+            "SELECT * FROM currency WHERE id = ?", (exchange_rate[1],)).fetchone()
         base_currency_json = currencies_tuple_to_list_of_dicts([base_currency_tuple])
-        target_currency_tuple = cursor.execute("SELECT * FROM currency WHERE id = ?", (exchange_rate[2],)).fetchone()
+        target_currency_tuple = cursor.execute(
+            "SELECT * FROM currency WHERE id = ?", (exchange_rate[2],)).fetchone()
         target_currency_json = currencies_tuple_to_list_of_dicts([target_currency_tuple])
 
         exchange_rate_dict = {
@@ -63,7 +65,11 @@ class MyServer(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.path == "/api/currencies":
-            self.post_currency()
+            # self.post_currency()
+            self.send_response(400)
+        else:
+            self.send_response(400)
+            self.end_headers()
 
     def get_exchange(self, from_currency, to_currency, amount):
         cursor.execute("""
@@ -76,7 +82,8 @@ class MyServer(BaseHTTPRequestHandler):
         exchange_rate = cursor.fetchone()
         exchange_rate_dict = exchange_rates_tuple_to_list_of_dicts([exchange_rate])[0]
         exchange_rate_dict["amount"] = amount
-        exchange_rate_dict["convertedAmount"] = round(float(exchange_rate_dict["rate"]) * float(amount), 2)
+        exchange_rate_dict["convertedAmount"] = round(float(exchange_rate_dict["rate"]) *
+                                                      float(amount), 2)
 
         self.send_200_json_headers()
         self.wfile.write(bytes(json.dumps(exchange_rate_dict, indent=2), "utf-8"))
@@ -126,46 +133,6 @@ class MyServer(BaseHTTPRequestHandler):
 
 
 def init_database_if_not_exists():
-    # cursor.execute("""
-    #     CREATE TABLE IF NOT EXISTS "currency" (
-    #         "id"    INTEGER,
-    #         "code"	TEXT,
-    #         "full_name"	TEXT,
-    #         "sign"	TEXT,
-    #         PRIMARY KEY("id")
-    #     )
-    # """)
-    # cursor.execute("""
-    #     CREATE TABLE IF NOT EXISTS "exchange_rate" (
-    #         "id"	INTEGER,
-    #         "base_currency_id"	INTEGER,
-    #         "target_currency_id"	INTEGER,
-    #         "rate"	NUMERIC,
-    #         FOREIGN KEY("base_currency_id") REFERENCES "currency"("id"),
-    #         FOREIGN KEY("target_currency_id") REFERENCES "currency"("id"),
-    #         PRIMARY KEY("id")
-    #     )
-    # """)
-
-    # cursor.execute("""
-    #     CREATE UNIQUE INDEX IF NOT EXISTS "idx_code" ON "currency" (
-    #         "code"
-    #     )
-    # """)
-
-    # cursor.execute("""
-    #     CREATE UNIQUE INDEX IF NOT EXISTS "idx_currency_pair" ON "exchange_rate" (
-    #         "base_currency_id",
-    #         "target_currency_id"
-    #     )
-    # """)
-
-    # cursor.execute("""
-    #     CREATE INDEX IF NOT EXISTS "idx_id" ON "currency" (
-    #         "id"
-    #     )
-    # """)
-
     cursor.executescript("""
         CREATE TABLE IF NOT EXISTS currency (
             id INTEGER PRIMARY KEY,
@@ -173,14 +140,14 @@ def init_database_if_not_exists():
             full_name TEXT,
             sign TEXT
         );
-    
+
         CREATE TABLE IF NOT EXISTS exchange_rate (
             id INTEGER PRIMARY KEY,
             base_currency_id INTEGER REFERENCES currency(id),
             target_currency_id INTEGER REFERENCES currency(id),
             rate NUMERIC
         );
-    
+
         CREATE UNIQUE INDEX IF NOT EXISTS idx_code ON currency(code);
 
         CREATE UNIQUE INDEX IF NOT EXISTS idx_currency_pair ON exchange_rate (
