@@ -1,177 +1,82 @@
-import json
-import re
-import sqlite3
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib import parse
-
-hostName = "localhost"  # Or "0.0.0.0" to be able to see server in whole LAN
-serverPort = 8080
+from database import Base, Currency, ExchangeRate, engine, SessionLocal
+from sqlalchemy.orm import Session
+from fastapi import Body, FastAPI, Depends
+from fastapi.responses import JSONResponse
 
 
-def exchange_rates_tuple_to_list_of_dicts(exchange_rates):
-    exchange_rates_list = []
-    for exchange_rate in exchange_rates:
-        base_currency_tuple = cursor.execute(
-            "SELECT * FROM currency WHERE id = ?", (exchange_rate[1],)).fetchone()
-        base_currency_json = currencies_tuple_to_list_of_dicts([base_currency_tuple])
-        target_currency_tuple = cursor.execute(
-            "SELECT * FROM currency WHERE id = ?", (exchange_rate[2],)).fetchone()
-        target_currency_json = currencies_tuple_to_list_of_dicts([target_currency_tuple])
+Base.metadata.create_all(bind=engine)
 
-        exchange_rate_dict = {
-            "id": exchange_rate[0],
-            "baseCurrency": base_currency_json[0],
-            "targetCurrency": target_currency_json[0],
-            "rate": exchange_rate[3],
-        }
-        exchange_rates_list.append(exchange_rate_dict)
-    return exchange_rates_list
+app = FastAPI()
 
 
-def currencies_tuple_to_list_of_dicts(currencies):
-    currencies_dict = []
-    for currency in currencies:
-        currency_dict = {
-            "id": currency[0],
-            "code": currency[1],
-            "fullName": currency[2],
-            "sign": currency[3],
-        }
-        currencies_dict.append(currency_dict)
-    return currencies_dict
-
-
-class MyServer(BaseHTTPRequestHandler):
-
-    def do_GET(self):
-        if self.path == "/api/currencies":
-            self.get_currencies()
-        elif self.path == "/api/exchangeRates":
-            self.get_exchange_rates()
-        elif re.search("/api/exchangeRate/.+", self.path):
-            currency_pair = self.path.split("/")[-1]
-            base_currency = currency_pair[:3]
-            target_currency = currency_pair[3:]
-            self.get_exchange_rate(base_currency, target_currency)
-        elif re.search("/api/exchange\?.+", self.path):
-            query_dict = dict(parse.parse_qsl(parse.urlsplit(self.path).query))
-            self.get_exchange(query_dict["from"], query_dict["to"], query_dict["amount"])
-        elif re.search("/api/currency/.+", self.path):
-            currency = self.path.split("/")[-1]
-            self.get_currency(currency)
-        else:
-            self.send_response(400)
-            self.end_headers()
-
-    def do_POST(self):
-        if self.path == "/api/currencies":
-            # self.post_currency()
-            self.send_response(400)
-        else:
-            self.send_response(400)
-            self.end_headers()
-
-    def get_exchange(self, from_currency, to_currency, amount):
-        cursor.execute("""
-            SELECT er.*
-            FROM exchange_rate AS er
-            JOIN currency AS c1 ON er.base_currency_id = c1.id
-            JOIN currency AS c2 ON er.target_currency_id = c2.id
-            WHERE c1.code = ? AND c2.code = ?
-        """, (from_currency, to_currency))
-        exchange_rate = cursor.fetchone()
-        exchange_rate_dict = exchange_rates_tuple_to_list_of_dicts([exchange_rate])[0]
-        exchange_rate_dict["amount"] = amount
-        exchange_rate_dict["convertedAmount"] = round(float(exchange_rate_dict["rate"]) *
-                                                      float(amount), 2)
-
-        self.send_200_json_headers()
-        self.wfile.write(bytes(json.dumps(exchange_rate_dict, indent=2), "utf-8"))
-
-    def get_exchange_rate(self, base_currency, target_currency):
-        cursor.execute("""
-            SELECT er.*
-            FROM exchange_rate AS er
-            JOIN currency AS c1 ON er.base_currency_id = c1.id
-            JOIN currency AS c2 ON er.target_currency_id = c2.id
-            WHERE c1.code = ? AND c2.code = ?
-        """, (base_currency, target_currency))
-        exchange_rate = cursor.fetchone()
-        exchange_rate_dict = exchange_rates_tuple_to_list_of_dicts([exchange_rate])[0]
-
-        self.send_200_json_headers()
-        self.wfile.write(bytes(json.dumps(exchange_rate_dict, indent=2), "utf-8"))
-
-    def get_exchange_rates(self):
-        cursor.execute("SELECT * FROM exchange_rate")
-        exchange_rates = cursor.fetchall()
-        exchange_rates_list_of_dicts = exchange_rates_tuple_to_list_of_dicts(exchange_rates)
-
-        self.send_200_json_headers()
-        self.wfile.write(bytes(json.dumps(exchange_rates_list_of_dicts, indent=2), "utf-8"))
-
-    def send_200_json_headers(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.end_headers()
-
-    def get_currencies(self):
-        cursor.execute("SELECT * FROM currency")
-        currencies = cursor.fetchall()
-        currencies_list_of_dicts = currencies_tuple_to_list_of_dicts(currencies)
-
-        self.send_200_json_headers()
-        self.wfile.write(bytes(json.dumps(currencies_list_of_dicts, indent=2), "utf-8"))
-
-    def get_currency(self, currency_code):
-        cursor.execute("SELECT * FROM currency WHERE code = ?", (currency_code,))
-        currency = cursor.fetchone()
-        currency_list_of_dict = currencies_tuple_to_list_of_dicts([currency])
-
-        self.send_200_json_headers()
-        self.wfile.write(bytes(json.dumps(currency_list_of_dict, indent=2), "utf-8"))
-
-
-def init_database_if_not_exists():
-    cursor.executescript("""
-        CREATE TABLE IF NOT EXISTS currency (
-            id INTEGER PRIMARY KEY,
-            code TEXT,
-            full_name TEXT,
-            sign TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS exchange_rate (
-            id INTEGER PRIMARY KEY,
-            base_currency_id INTEGER REFERENCES currency(id),
-            target_currency_id INTEGER REFERENCES currency(id),
-            rate NUMERIC
-        );
-
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_code ON currency(code);
-
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_currency_pair ON exchange_rate (
-            base_currency_id,
-            target_currency_id
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_id ON currency(id);
-    """)
-
-
-if __name__ == "__main__":
-    connection = sqlite3.connect("exchange.sqlite")
-    cursor = connection.cursor()
-    init_database_if_not_exists()
-
-    webServer = HTTPServer((hostName, serverPort), MyServer)
-    print(f"Server started http://{hostName}:{serverPort}")
-
+def get_db():
+    db = SessionLocal()
     try:
-        webServer.serve_forever()
-    except KeyboardInterrupt:
-        pass
+        yield db
+    finally:
+        db.close()
 
-    connection.close()
-    webServer.server_close()
-    print("Server stopped")
+
+@app.get("/api/currencies")
+def get_currencies(db: Session = Depends(get_db)):
+    return db.query(Currency).all()
+
+
+@app.get("/api/currencies/{code}")
+def get_currency(code, db: Session = Depends(get_db)):
+    currency = db.query(Currency).filter(Currency.code == code).first()
+    if not currency:
+        return JSONResponse(status_code=404, content={"message": "Валюта не найдена"})
+    return currency
+
+
+@app.post("/api/currencies/")
+def post_currency(data=Body(), db: Session = Depends(get_db)):
+    currency = Currency(name=data["name"], code=data["code"], sign=data["sign"])
+    db.add(currency)
+    db.commit()
+    db.refresh(currency)
+    return currency
+
+
+@app.get("/api/exchangeRates")
+def get_exchange_rates(db: Session = Depends(get_db)):
+    return db.query(ExchangeRate).all()
+
+
+@app.get("/api/exchangeRates/{exchange_pair}")
+def get_exchange_rate(exchange_pair, db: Session = Depends(get_db)):
+    exchange_rate = db.query(ExchangeRate).filter(...).first()
+    if not exchange_rate:
+        return JSONResponse(status_code=404,
+                            content={"message": "Обменный курс для пары не найден"})
+    return exchange_rate
+
+
+@app.post("/api/exchangeRates/")
+def post_exchange_rate(data=Body(), db: Session = Depends(get_db)):
+    exchange_rate = ExchangeRate(base_currency_code=data["base_currency_code"],
+                                 target_currency_code=data["target_currency_code"],
+                                 rate=data["rate"])
+    db.add(exchange_rate)
+    db.commit()
+    db.refresh(exchange_rate)
+    return exchange_rate
+
+
+@app.patch("/api/exchangeRates/{pair}")
+def patch_exchange_rate(data=Body(), db: Session = Depends(get_db)):
+    exchange_rate = db.query(ExchangeRate).filter(...).first()
+    if not exchange_rate:
+        return JSONResponse(status_code=404,
+                            content={"message": "Обменный курс для пары не найден"})
+    exchange_rate.rate = data["rate"]
+    db.commit()
+    db.refresh(exchange_rate)
+    return exchange_rate
+
+
+# /exchange?from=BASE_CURRENCY_CODE&to=TARGET_CURRENCY_CODE&amount=$AMOUNT
+@app.get("/exchange")
+def get_exchange(db: Session = Depends(get_db)):
+    pass
