@@ -1,7 +1,7 @@
 from typing import Annotated
 from database import Base, Currency, ExchangeRate, engine, SessionLocal
-from sqlalchemy.orm import Session
-from fastapi import Body, FastAPI, Depends, Form
+from sqlalchemy.orm import Session, aliased
+from fastapi import FastAPI, Depends, Form
 from fastapi.responses import JSONResponse
 
 
@@ -53,7 +53,13 @@ def get_exchange_rate(exchange_pair, db: Session = Depends(get_db)):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
-    exchange_rate = db.query(ExchangeRate).filter().first()
+    c1 = aliased(Currency)
+    c2 = aliased(Currency)
+    exchange_rate = db.query(ExchangeRate) \
+        .join(c1, ExchangeRate.base_currency_id == c1.id) \
+        .join(c2, ExchangeRate.target_currency_id == c2.id) \
+        .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
+
     if not exchange_rate:
         return JSONResponse(status_code=404,
                             content={"message": "Обменный курс для пары не найден"})
@@ -95,13 +101,24 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Form()],
     return JSONResponse(content=exchange_rate_json)
 
 
-@app.patch("/api/exchangeRate/{pair}")
-def patch_exchange_rate(data=Body(), db: Session = Depends(get_db)):
-    exchange_rate = db.query(ExchangeRate).filter(...).first()
+@app.patch("/api/exchangeRate/{exchange_pair}")
+def patch_exchange_rate(exchange_pair: str,
+                        rate: Annotated[float, Form()],
+                        db: Session = Depends(get_db)):
+    base_currency_code = exchange_pair[:3]
+    target_currency_code = exchange_pair[3:]
+
+    c1 = aliased(Currency)
+    c2 = aliased(Currency)
+    exchange_rate = db.query(ExchangeRate) \
+        .join(c1, ExchangeRate.base_currency_id == c1.id) \
+        .join(c2, ExchangeRate.target_currency_id == c2.id) \
+        .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
+
     if not exchange_rate:
         return JSONResponse(status_code=404,
                             content={"message": "Обменный курс для пары не найден"})
-    exchange_rate.rate = data["rate"]
+    exchange_rate.rate = rate
     db.commit()
     db.refresh(exchange_rate)
     return exchange_rate
@@ -109,4 +126,29 @@ def patch_exchange_rate(data=Body(), db: Session = Depends(get_db)):
 
 @app.get("/api/exchange")
 def get_exchange(baseCode: str, targetCode: str, amount: float, db: Session = Depends(get_db)):
-    return JSONResponse({"fromCode": baseCode, "toCode": targetCode, "amount": amount})
+    c1 = aliased(Currency)
+    c2 = aliased(Currency)
+    exchange_rate = db.query(ExchangeRate) \
+        .join(c1, ExchangeRate.base_currency_id == c1.id) \
+        .join(c2, ExchangeRate.target_currency_id == c2.id) \
+        .filter(c1.code == baseCode, c2.code == targetCode).first()
+
+    if not exchange_rate:
+        return JSONResponse(status_code=404,
+                            content={"message": "Обменный курс для пары не найден"})
+
+    base_currency = db.query(Currency).filter(Currency.code == baseCode).first()
+    target_currency = db.query(Currency).filter(Currency.code == targetCode).first()
+
+    base_currency_json = base_currency.__dict__.copy()
+    target_currency_json = target_currency.__dict__.copy()
+
+    exchange_json = {
+        "baseCurrency": base_currency_json,
+        "targetCurrency": target_currency_json,
+        "rate": exchange_rate.rate,
+        "amount": amount,
+        "convertedAmount": round(float(exchange_rate.rate) * amount, 2)
+    }
+
+    return exchange_json
