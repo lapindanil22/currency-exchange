@@ -1,7 +1,7 @@
 from typing import Annotated
 from database import Base, Currency, ExchangeRate, engine, SessionLocal
 from sqlalchemy.orm import Session, aliased
-from fastapi import FastAPI, Depends, Form
+from fastapi import FastAPI, Depends, Form, Path, Query
 from fastapi.responses import JSONResponse
 
 
@@ -23,8 +23,9 @@ def get_currencies(db: Session = Depends(get_db)):
     return db.query(Currency).all()
 
 
-@app.get("/api/currencies/{code}")
-def get_currency(code, db: Session = Depends(get_db)):
+@app.get("/api/currency/{code}")
+def get_currency_empty(code: Annotated[str, Path()],
+                       db: Session = Depends(get_db)):
     currency = db.query(Currency).filter(Currency.code == code).first()
     if not currency:
         return JSONResponse(status_code=404, content={"message": "Валюта не найдена"})
@@ -36,6 +37,9 @@ def post_currency(name: Annotated[str, Form()],
                   code: Annotated[str, Form()],
                   sign: Annotated[str, Form()],
                   db: Session = Depends(get_db)):
+    if db.query(Currency).filter(Currency.code == code).first():
+        return JSONResponse(status_code=409,
+                            content={"message": "Валюта с таким кодом уже существует"})
     currency = Currency(name=name, code=code, sign=sign)
     db.add(currency)
     db.commit()
@@ -49,7 +53,8 @@ def get_exchange_rates(db: Session = Depends(get_db)):
 
 
 @app.get("/api/exchangeRate/{exchange_pair}")
-def get_exchange_rate(exchange_pair, db: Session = Depends(get_db)):
+def get_exchange_rate(exchange_pair: Annotated[str, Path()],
+                      db: Session = Depends(get_db)):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
@@ -73,6 +78,14 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Form()],
                        db: Session = Depends(get_db)):
     base_currency = db.query(Currency).filter(Currency.code == baseCurrencyCode).first()
     target_currency = db.query(Currency).filter(Currency.code == targetCurrencyCode).first()
+    if not base_currency or not target_currency:
+        return JSONResponse(status_code=404,
+                            content={"message": "Одна (или обе) валюта из валютной пары не существует в БД"})
+
+    if db.query(ExchangeRate).filter(ExchangeRate.base_currency_id == base_currency.id,
+                                     ExchangeRate.target_currency_id == target_currency.id).first():
+        return JSONResponse(status_code=409,
+                            content={"message": "Валютная пара с таким кодом уже существует"})
 
     base_currency_json = base_currency.__dict__.copy()
     target_currency_json = target_currency.__dict__.copy()
@@ -102,11 +115,17 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Form()],
 
 
 @app.patch("/api/exchangeRate/{exchange_pair}")
-def patch_exchange_rate(exchange_pair: str,
+def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
                         rate: Annotated[float, Form()],
                         db: Session = Depends(get_db)):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
+
+    base_currency = db.query(Currency).filter(Currency.code == base_currency_code).first()
+    target_currency = db.query(Currency).filter(Currency.code == target_currency_code).first()
+    if not base_currency or not target_currency:
+        return JSONResponse(status_code=404,
+                            content={"message": "Валютная пара отсутствует в базе данных"})
 
     c1 = aliased(Currency)
     c2 = aliased(Currency)
@@ -125,7 +144,16 @@ def patch_exchange_rate(exchange_pair: str,
 
 
 @app.get("/api/exchange")
-def get_exchange(baseCode: str, targetCode: str, amount: float, db: Session = Depends(get_db)):
+def get_exchange(baseCode: Annotated[str, Query()],
+                 targetCode: Annotated[str, Query()],
+                 amount: Annotated[float, Query()],
+                 db: Session = Depends(get_db)):
+    base_currency = db.query(Currency).filter(Currency.code == baseCode).first()
+    target_currency = db.query(Currency).filter(Currency.code == targetCode).first()
+    if not base_currency or not target_currency:
+        return JSONResponse(status_code=404,
+                            content={"message": "Одна (или обе) валюта из валютной пары не существует в БД"})
+
     c1 = aliased(Currency)
     c2 = aliased(Currency)
     exchange_rate = db.query(ExchangeRate) \
@@ -144,11 +172,11 @@ def get_exchange(baseCode: str, targetCode: str, amount: float, db: Session = De
     target_currency_json = target_currency.__dict__.copy()
 
     exchange_json = {
-        "baseCurrency": base_currency_json,
-        "targetCurrency": target_currency_json,
+        "base_currency": base_currency_json,
+        "target_currency": target_currency_json,
         "rate": exchange_rate.rate,
         "amount": amount,
-        "convertedAmount": round(float(exchange_rate.rate) * amount, 2)
+        "converted_amount": round(float(exchange_rate.rate) * amount, 2)
     }
 
     return exchange_json

@@ -4,17 +4,16 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///./exchange.db"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False}
 )
-
-
 Base = declarative_base()
 
 
 class Currency(Base):
     __tablename__ = "currency"
     id = Column(Integer, primary_key=True, index=True)
-    code = Column(String, index=True, nullable=False)
+    code = Column(String, unique=True, index=True, nullable=False)
     name = Column(String)
     sign = Column(String)
 
@@ -32,6 +31,5 @@ Index('ix_base_currency_id_target_currency_id',
 
 
 Base.metadata.create_all(bind=engine)
-
 SessionLocal = sessionmaker(autoflush=False, bind=engine)
 db = SessionLocal()
