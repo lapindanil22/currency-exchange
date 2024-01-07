@@ -1,21 +1,23 @@
 from typing import Annotated
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from database import Base, Currency, ExchangeRate, engine, SessionLocal
 from sqlalchemy.orm import Session, aliased
-from fastapi import FastAPI, Depends, Form, Path, Query
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Depends, Form, Path, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 
 def get_db():
-    db = SessionLocal()
-    try:
+    with SessionLocal() as db:
         yield db
-    finally:
-        db.close()
 
 
 @app.get("/api/currencies")
@@ -180,3 +182,11 @@ def get_exchange(baseCode: Annotated[str, Query()],
     }
 
     return exchange_json
+
+
+@app.get("/", response_class=HTMLResponse)
+def main(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html"
+    )

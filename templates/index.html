@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Currency exchange</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="{{ url_for('static', path='index/script.js') }}"></script>
+  <link href="{{ url_for('static', path='index/styles.css') }}" rel="stylesheet">
+</head>
+<body>
+  <ul>
+    <li><a href="/api/currencies">Currencies</a></li>
+    <!-- @app.get("/api/currency/{code}") -->
+    <!-- @app.post("/api/currencies") -->
+    <!-- TODO delete currency -->
+
+    <li><a href="/api/exchangeRates">Exchange rates</a></li>
+    <!-- @app.get("/api/exchangeRate/{exchange_pair}") -->
+    <!-- @app.post("/api/exchangeRates") -->
+    <!-- @app.patch("/api/exchangeRate/{exch/ange_pair}") -->
+    
+    <!-- @app.get("/api/exchange") -->
+
+  </ul>
+
+  <h2>Список валют</h2>
+  <!-- <div>
+      <input type="hidden" id="userId" />
+      <p>
+          Имя:<br/>
+          <input id="userName" />
+      </p>
+      <p>
+          Возраст:<br />
+          <input id="userAge" type="number" />
+      </p>
+       <p>
+          <button id="saveBtn">Сохранить</button>
+          <button id="resetBtn">Сбросить</button>
+      </p>
+  </div> -->
+  <table border="1" cellpadding="5">
+      <thead>
+        <tr>
+          <th>Название</th>
+          <th>Код</th>
+          <th>Знак</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+      </tbody>
+  </table>
+</body>
+</html>
