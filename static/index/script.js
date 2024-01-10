@@ -4,9 +4,21 @@ async function getCurrencies() {
     headers: { "Accept": "application/json" }
   });
   if (response.ok === true) {
-    const users = await response.json();
-    const rows = document.querySelector("tbody");
-    users.forEach(user => rows.append(row(user)));
+    const currencies = await response.json();
+    const rows = document.querySelector("#currenciesTBody");
+    currencies.forEach(currency => rows.append(currencyRow(currency)));
+  }
+}
+
+async function getExchangeRates() {
+  const response = await fetch("/exchangeRates", {
+    method: "GET",
+    headers: { "Accept": "application/json" }
+  });
+  if (response.ok === true) {
+    const exchangeRates = await response.json();
+    const rows = document.querySelector("#exchangeTBody");
+    exchangeRates.forEach(exchangeRate => rows.append(exchangeRateRow(exchangeRate)));
   }
 }
 
@@ -86,34 +98,33 @@ function reset() {
     
 }
 
-// создание строки для таблицы
-function row(user) {
-
+// создание строки для таблицы валют
+function currencyRow(currency) {
     const tr = document.createElement("tr");
-    tr.setAttribute("data-rowid", user.id);
+    tr.setAttribute("data-rowid", currency.id);
 
     const nameTd = document.createElement("td");
-    nameTd.append(user.name);
+    nameTd.append(currency.name);
     tr.append(nameTd);
 
     const codeTd = document.createElement("td");
-    codeTd.append(user.code);
+    codeTd.append(currency.code);
     tr.append(codeTd);
 
     const signTd = document.createElement("td");
-    signTd.append(user.sign);
+    signTd.append(currency.sign);
     tr.append(signTd);
 
     const linksTd = document.createElement("td");
 
-    const editLink = document.createElement("button"); 
-    editLink.append("Изменить");
-    editLink.addEventListener("click", async() => await getCurrency(user.id));
-    linksTd.append(editLink);
+    // const editLink = document.createElement("button"); 
+    // editLink.append("Изменить");
+    // editLink.addEventListener("click", async() => await getCurrency(user.id));
+    // linksTd.append(editLink);
 
     const removeLink = document.createElement("button"); 
-    removeLink.append("Удалить");
-    removeLink.addEventListener("click", async () => await deleteUser(user.id));
+    removeLink.append("delete");
+    removeLink.addEventListener("click", async () => await deleteUser(currency.id));
 
     linksTd.append(removeLink);
     tr.appendChild(linksTd);
@@ -121,9 +132,43 @@ function row(user) {
     return tr;
 }
 
-// загрузка пользователей
+// создание строки для таблицы обменных курсов
+function exchangeRateRow(exchangeRate) {
+  const tr = document.createElement("tr");
+  tr.setAttribute("data-rowid", exchangeRate.id);
+
+  const nameTd = document.createElement("td");
+  nameTd.append(exchangeRate.base_currency.code);
+  tr.append(nameTd);
+
+  const codeTd = document.createElement("td");
+  codeTd.append(exchangeRate.target_currency.code);
+  tr.append(codeTd);
+
+  const signTd = document.createElement("td");
+  signTd.append(exchangeRate.rate);
+  tr.append(signTd);
+
+  const linksTd = document.createElement("td");
+
+  // const editLink = document.createElement("button"); 
+  // editLink.append("Изменить");
+  // editLink.addEventListener("click", async() => await getexchangeRate(user.id));
+  // linksTd.append(editLink);
+
+  const removeLink = document.createElement("button"); 
+  removeLink.append("delete");
+  removeLink.addEventListener("click", async () => await deleteUser(exchangeRate.id));
+
+  linksTd.append(removeLink);
+  tr.appendChild(linksTd);
+
+  return tr;
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     getCurrencies();
+    getExchangeRates();
 
     // // сброс значений формы
     // document.getElementById("resetBtn").addEventListener("click", () => {

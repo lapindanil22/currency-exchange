@@ -8,13 +8,42 @@
   <link href="{{ url_for('static', path='index/styles.css') }}" rel="stylesheet">
 </head>
 <body>
+  <h2>Currencies</h2>
+  <table border="1" cellpadding="5">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Code</th>
+          <th>Sign</th>
+          <!-- <th>action</th> -->
+        </tr>
+      </thead>
+      <tbody id="currenciesTBody">
+      </tbody>
+  </table>
+
+  <h2>Exchange rates</h2>
+  <table border="1" cellpadding="5">
+      <thead>
+        <tr>
+          <th>Base</th>
+          <th>Target</th>
+          <th>Rate</th>
+          <!-- <th>action</th> -->
+        </tr>
+      </thead>
+      <tbody id="exchangeTBody"">
+      </tbody>
+  </table>
+
+  <h2>Get JSON-Response</h2>
   <ul>
     <li><a href="/currencies">Currencies</a></li>
     <!-- @app.get("/api/currency/{code}") -->
     <!-- @app.post("/api/currencies") -->
     <!-- TODO delete currency -->
 
-    <li><a href="/exchangeRates">Exchange rates</a></li>
+    <li><a href="/exchangeRates">Exchange Rates</a></li>
     <!-- @app.get("/api/exchangeRate/{exchange_pair}") -->
     <!-- @app.post("/api/exchangeRates") -->
     <!-- @app.patch("/api/exchangeRate/{exch/ange_pair}") -->
@@ -23,7 +52,6 @@
 
   </ul>
 
-  <h2>Список валют</h2>
   <!-- <div>
       <input type="hidden" id="userId" />
       <p>
@@ -39,17 +67,5 @@
           <button id="resetBtn">Сбросить</button>
       </p>
   </div> -->
-  <table border="1" cellpadding="5">
-      <thead>
-        <tr>
-          <th>Название</th>
-          <th>Код</th>
-          <th>Знак</th>
-          <th>Действия</th>
-        </tr>
-      </thead>
-      <tbody>
-      </tbody>
-  </table>
 </body>
 </html>
