@@ -8,7 +8,7 @@
   <link href="{{ url_for('static', path='index/styles.css') }}" rel="stylesheet">
 </head>
 <body>
-  <h2>Currencies</h2>
+  <h2>Currencies (<a href="/currencies">JSON</a>)</h2>
   <table border="1" cellpadding="5">
       <thead>
         <tr>
@@ -21,13 +21,20 @@
       <tbody id="currenciesTBody">
       </tbody>
   </table>
+ 
+  <h3>Add new currency</h3>
+  <form action="/currencies" method="POST">
+    <p>Name <input type="text" id="name"></p>
+    <p>Code <input type="text" id="code" maxlength="3"></p>
+    <p>Sign <input type="text" id="sign" maxlength="1"></p>
+    <p><input id="addCurrencyButton" type="submit" value="add"></p>
+  </form>
 
-  <h2>Exchange rates</h2>
+  <h2>Exchange rates (<a href="/exchangeRates">JSON</a>)</h2>
   <table border="1" cellpadding="5">
       <thead>
         <tr>
-          <th>Base</th>
-          <th>Target</th>
+          <th>Pair</th>
           <th>Rate</th>
           <!-- <th>action</th> -->
         </tr>
@@ -36,22 +43,20 @@
       </tbody>
   </table>
 
-  <ul>
-    <li><a href="/currencies">GET /currencies</a></li>
-    <!-- @app.get("/api/currency/{code}") -->
-    <!-- @app.post("/api/currencies") -->
-    <!-- TODO delete currency -->
+  <h2>Exchange</h2>
+  <form action="" method="get">
+    <p>Base currency code<input type="text" id="baseCode" maxlength="3"></p>
+    <p>Target currency code<input type="text" id="targetCode" maxlength="3"></p>
+    <p>Amount<input type="number" id="amount"></p>
+    <p>
+      <input id="exchangeButton" type="submit" value="exchange">
+      Converted amount: <span id="convertedAmount">...</span>
+    </p>
+  </form>
+</body>
+</html>
 
-    <li><a href="/exchangeRates">GET /exchangeRates</a></li>
-    <!-- @app.get("/api/exchangeRate/{exchange_pair}") -->
-    <!-- @app.post("/api/exchangeRates") -->
-    <!-- @app.patch("/api/exchangeRate/{exch/ange_pair}") -->
-    
-    <!-- @app.get("/api/exchange") -->
-
-  </ul>
-
-  <!-- <div>
+<!-- <div>
       <input type="hidden" id="userId" />
       <p>
           Имя:<br/>
@@ -66,5 +71,3 @@
           <button id="resetBtn">Сбросить</button>
       </p>
   </div> -->
-</body>
-</html>

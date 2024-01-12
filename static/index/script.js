@@ -123,7 +123,7 @@ function currencyRow(currency) {
     tr.append(nameTd);
 
     const codeTd = document.createElement("td");
-    codeTd.append(currency.code);
+    codeTd.innerHTML = `<a href="/currencies/${currency.code}">${currency.code}</a>`;
     tr.append(codeTd);
 
     const signTd = document.createElement("td");
@@ -152,17 +152,17 @@ function exchangeRateRow(exchangeRate) {
   const tr = document.createElement("tr");
   tr.setAttribute("data-rowid", "exchangeRate" + exchangeRate.id);
 
-  const nameTd = document.createElement("td");
-  nameTd.append(exchangeRate.base_currency.code);
-  tr.append(nameTd);
+  const pairTd = document.createElement("td");
+  pairTd.innerHTML = `<a href="/exchangeRates/${exchangeRate.base_currency.code + exchangeRate.target_currency.code}">${exchangeRate.base_currency.code}/${exchangeRate.target_currency.code}</a>`;
+  tr.append(pairTd);
 
-  const codeTd = document.createElement("td");
-  codeTd.append(exchangeRate.target_currency.code);
-  tr.append(codeTd);
+  // const codeTd = document.createElement("td");
+  // codeTd.append(exchangeRate.target_currency.code);
+  // tr.append(codeTd);
 
-  const signTd = document.createElement("td");
-  signTd.append(exchangeRate.rate);
-  tr.append(signTd);
+  const rateTd = document.createElement("td");
+  rateTd.append(exchangeRate.rate);
+  tr.append(rateTd);
 
   const linksTd = document.createElement("td");
 
@@ -185,12 +185,55 @@ document.addEventListener("DOMContentLoaded", function() {
     getCurrencies();
     getExchangeRates();
 
-    // // сброс значений формы
-    // document.getElementById("resetBtn").addEventListener("click", () => {
-    //     document.getElementById("userId").value = "";
-    //     document.getElementById("userName").value = "";
-    //     document.getElementById("userAge").value = "";
-    // });
+    const exchangeButton = document.getElementById("exchangeButton");
+    const convertedAmountSpan = document.getElementById("convertedAmount")
+
+    exchangeButton.addEventListener("click", async function(event) {
+      event.preventDefault();
+      
+      const baseCode = document.getElementById("baseCode").value;
+      const targetCode = document.getElementById("targetCode").value;
+      const amount = document.getElementById("amount").value;
+
+      const response = await fetch(`/exchange?baseCode=${baseCode}&targetCode=${targetCode}&amount=${amount}`, {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+      if (response.ok === true) {
+        const exchange = await response.json();
+        convertedAmountSpan.innerHTML = exchange.converted_amount;
+      }
+    });
+
+    const addCurrencyButton = document.getElementById("addCurrencyButton");
+    addCurrencyButton.addEventListener("click", async function(event) {
+      event.preventDefault();
+
+      const nameInput = document.getElementById("name");
+      const codeInput = document.getElementById("code");
+      const signInput = document.getElementById("sign");
+
+      const response = await fetch("/currencies", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: nameInput.value, 
+          code: codeInput.value, 
+          sign: signInput.value
+        })
+      });
+      if (response.ok === true) {
+        const currency = await response.json();
+        const rows = document.querySelector("#currenciesTBody");
+        rows.append(currencyRow(currency));
+        nameInput.value = "",
+        codeInput.value = "",
+        signInput.value = ""
+      }
+    });
 
     // // отправка формы
     // document.getElementById("saveBtn").addEventListener("click", async () => {

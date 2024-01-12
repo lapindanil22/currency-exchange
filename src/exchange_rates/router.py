@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Form, Path
+from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from src.currencies.models import Currency
 from src.database import get_db
@@ -76,9 +76,9 @@ def get_exchange_rate(exchange_pair: Annotated[str, Path()],
 
 
 @router.post("")
-def post_exchange_rate(baseCurrencyCode: Annotated[str, Form()],
-                       targetCurrencyCode: Annotated[str, Form()],
-                       rate: Annotated[float, Form()],
+def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
+                       targetCurrencyCode: Annotated[str, Body()],
+                       rate: Annotated[float, Body()],
                        db: Session = Depends(get_db)):
     base_currency = db.query(Currency).filter(Currency.code == baseCurrencyCode).first()
     target_currency = db.query(Currency).filter(Currency.code == targetCurrencyCode).first()
@@ -122,7 +122,7 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Form()],
 
 @router.patch("/{exchange_pair}")
 def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
-                        rate: Annotated[float, Form()],
+                        rate: Annotated[float, Body()],
                         db: Session = Depends(get_db)):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]

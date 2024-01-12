@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Form, Path
+from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get("/")
 def get_currencies(db: Session = Depends(get_db)):
     return db.query(Currency).all()
 
@@ -27,10 +27,10 @@ def get_currency_empty(code: Annotated[str, Path()],
     return currency
 
 
-@router.post("")
-def post_currency(name: Annotated[str, Form()],
-                  code: Annotated[str, Form()],
-                  sign: Annotated[str, Form()],
+@router.post("/")
+def post_currency(name: Annotated[str, Body()],
+                  code: Annotated[str, Body()],
+                  sign: Annotated[str, Body()],
                   db: Session = Depends(get_db)):
     if db.query(Currency).filter(Currency.code == code).first():
         return JSONResponse(status_code=409,
