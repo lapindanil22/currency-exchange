@@ -21,14 +21,18 @@
       <tbody id="currenciesTBody">
       </tbody>
   </table>
+
+  <hr>
  
   <h3>Add new currency</h3>
-  <form action="/currencies" method="POST">
-    <p>Name <input type="text" id="name"></p>
-    <p>Code <input type="text" id="code" maxlength="3"></p>
-    <p>Sign <input type="text" id="sign" maxlength="1"></p>
-    <p><input id="addCurrencyButton" type="submit" value="add"></p>
+  <form method="POST">
+    <p>Name <input type="text"  id="cname"></p>
+    <p>Code <input type="text" id="ccode" maxlength="3"></p>
+    <p>Sign <input type="text" id="csign" maxlength="1"></p>
+    <p><input id="cadd" type="submit" value="add"></p>
   </form>
+
+  <hr>
 
   <h2>Exchange rates (<a href="/exchangeRates">JSON</a>)</h2>
   <table border="1" cellpadding="5">
@@ -43,11 +47,23 @@
       </tbody>
   </table>
 
+  <hr>
+
+  <h3>Add new exchange rate</h3>
+  <form method="POST">
+    <p>Base currency code <input type="text" id="erbccode" maxlength="3"></p>
+    <p>Target currency code <input type="text" id="ertccode" maxlength="3"></p>
+    <p>Rate <input type="text" id="errate"></p>
+    <p><input id="eradd" type="submit" value="add"></p>
+  </form>
+
+  <hr>
+
   <h2>Exchange</h2>
-  <form action="" method="get">
-    <p>Base currency code<input type="text" id="baseCode" maxlength="3"></p>
-    <p>Target currency code<input type="text" id="targetCode" maxlength="3"></p>
-    <p>Amount<input type="number" id="amount"></p>
+  <form method="get">
+    <p>Base currency code <input type="text" id="baseCode" maxlength="3"></p>
+    <p>Target currency code <input type="text" id="targetCode" maxlength="3"></p>
+    <p>Amount <input type="number" id="amount"></p>
     <p>
       <input id="exchangeButton" type="submit" value="exchange">
       Converted amount: <span id="convertedAmount">...</span>

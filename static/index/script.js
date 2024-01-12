@@ -205,13 +205,13 @@ document.addEventListener("DOMContentLoaded", function() {
       }
     });
 
-    const addCurrencyButton = document.getElementById("addCurrencyButton");
+    const addCurrencyButton = document.getElementById("cadd");
     addCurrencyButton.addEventListener("click", async function(event) {
       event.preventDefault();
 
-      const nameInput = document.getElementById("name");
-      const codeInput = document.getElementById("code");
-      const signInput = document.getElementById("sign");
+      const nameInput = document.getElementById("cname");
+      const codeInput = document.getElementById("ccode");
+      const signInput = document.getElementById("csign");
 
       const response = await fetch("/currencies", {
         method: "POST",
@@ -234,6 +234,37 @@ document.addEventListener("DOMContentLoaded", function() {
         signInput.value = ""
       }
     });
+
+    const addExchangeRateButton = document.getElementById("eradd");
+    addExchangeRateButton.addEventListener("click", async function(event) {
+      event.preventDefault();
+
+      const baseCurrencyCodeInput = document.getElementById("erbccode");
+      const targetCurrencyCodeInput = document.getElementById("ertccode");
+      const rateInput = document.getElementById("errate");
+
+      const response = await fetch("/exchangeRates", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          baseCurrencyCode: baseCurrencyCodeInput.value, 
+          targetCurrencyCode: targetCurrencyCodeInput.value, 
+          rate: rateInput.value
+        })
+      });
+      if (response.ok === true) {
+        const exchangeRate = await response.json();
+        const rows = document.querySelector("#exchangeTBody");
+        rows.append(exchangeRateRow(exchangeRate));
+        baseCurrencyCodeInput.value = "",
+        targetCurrencyCodeInput.value = "",
+        rateInput.value = ""
+      }
+    });
+
 
     // // отправка формы
     // document.getElementById("saveBtn").addEventListener("click", async () => {
