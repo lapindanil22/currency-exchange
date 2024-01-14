@@ -1,9 +1,13 @@
+import uvicorn
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-
+from sqlalchemy_utils import database_exists
+from src.exchange_rates.models import ExchangeRate
+from src.currencies.models import Currency
+from src.database import engine, Base, db
 from src.currencies.router import router as router_currencies
 from src.exchange_rates.router import router as router_exchange_rates
 from src.exchange.router import router as router_exchange
@@ -39,3 +43,40 @@ def main(request: Request):
         request=request,
         name="index.html"
     )
+
+
+def init_db():
+    if database_exists(engine.url):
+        return
+
+    Base.metadata.create_all(bind=engine)
+
+    currencies = [
+        {"name": "US Dollar", "code": "USD", "sign": "$"},
+        {"name": "Russian Ruble", "code": "RUB", "sign": "₽"},
+        {"name": "Euro", "code": "EUR", "sign": "€"},
+        {"name": "Kazakhstani Tenge", "code": "KZT", "sign": "₸"},
+        {"name": "Japanese yen", "code": "JPY", "sign": "¥"},
+    ]
+
+    exchange_rates = [
+        {"base_currency_id": 1, "target_currency_id": 2, "rate": 92.35},
+        {"base_currency_id": 3, "target_currency_id": 2, "rate": 100.3},
+        {"base_currency_id": 4, "target_currency_id": 2, "rate": 0.19},
+        {"base_currency_id": 5, "target_currency_id": 2, "rate": 0.61},
+        {"base_currency_id": 1, "target_currency_id": 3, "rate": 0.91},
+    ]
+
+    for currency in currencies:
+        db.add(Currency(**currency))
+
+    for exchange_rate in exchange_rates:
+        db.add(ExchangeRate(**exchange_rate))
+
+    db.commit()
+    db.close()
+
+
+if __name__ == "__main__":
+    init_db()
+    uvicorn.run("main:app", port=8000)
