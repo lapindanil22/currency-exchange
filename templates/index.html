@@ -15,7 +15,7 @@
           <th>Name</th>
           <th>Code</th>
           <th>Sign</th>
-          <!-- <th>action</th> -->
+          <th>actions</th>
         </tr>
       </thead>
       <tbody id="currenciesTBody">
@@ -26,10 +26,12 @@
  
   <h3>Add currency</h3>
   <form method="POST">
-    <p>Name <input type="text"  id="cname"></p>
-    <p>Code <input type="text" id="ccode" maxlength="3"></p>
-    <p>Sign <input type="text" id="csign" maxlength="1"></p>
-    <p><input id="cadd" type="submit" value="add"></p>
+    <table>
+      <tr><td>Name</td><td><input type="text" id="cname"></td></tr>
+      <tr><td>Code</td><td><input type="text" id="ccode" maxlength="3"></td></tr>
+      <tr><td>Sign</td><td><input type="text" id="csign" maxlength="1"></td></tr>
+      <tr><td><input id="cadd" type="submit" value="add"></td></tr>
+    </table>
   </form>
 
   <hr>
@@ -40,7 +42,7 @@
         <tr>
           <th>Pair</th>
           <th>Rate</th>
-          <!-- <th>action</th> -->
+          <th>actions</th>
         </tr>
       </thead>
       <tbody id="exchangeTBody"">
@@ -51,24 +53,29 @@
 
   <h3>Add exchange rate</h3>
   <form method="POST">
-    <input type="hidden" id="erpair" >
-    <p>Base currency code <input type="text" id="erbccode" maxlength="3"></p>
-    <p>Target currency code <input type="text" id="ertccode" maxlength="3"></p>
-    <p>Rate <input type="text" id="errate"></p>
-    <p><input id="eradd" type="submit" value="save"></p>
+    <input type="hidden" id="erpair">
+    <table>
+      <tr><td>Base currency code</td><td><input type="text" id="erbccode" maxlength="3"></td></tr>
+      <tr><td>Target currency code</td><td><input type="text" id="ertccode" maxlength="3"></td></tr>
+      <tr><td>Rate</td><td><input type="text" id="errate"></td></tr>
+      <tr><td><input id="eradd" type="submit" value="save"></td></tr>
+    </table>
   </form>
 
   <hr>
 
   <h3>Exchange</h3>
   <form method="get">
-    <p>Base currency code <input type="text" id="baseCode" maxlength="3"></p>
-    <p>Target currency code <input type="text" id="targetCode" maxlength="3"></p>
-    <p>Amount <input type="number" id="amount"></p>
-    <p>
-      <input id="exchangeButton" type="submit" value="exchange">
-      Converted amount: <span id="convertedAmount">...</span>
-    </p>
+    <table>
+      <tr><td>Base currency code</td><td><input type="text" id="baseCode" maxlength="3"></td></tr>
+      <tr><td>Target currency code</td><td><input type="text" id="targetCode" maxlength="3"></td></tr>
+      <tr><td>Amount</td><td><input type="number" id="amount"></td></tr>
+      <tr><td><input id="exchangeButton" type="submit" value="exchange"></td></tr>
+      <tr>
+        <td>Converted amount:</td>
+        <td><span id="convertedAmount">...</span></td>
+      </tr>
+    </table>
   </form>
 </body>
 </html>
