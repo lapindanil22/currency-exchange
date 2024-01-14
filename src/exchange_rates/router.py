@@ -137,6 +137,10 @@ def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
 
     c1 = aliased(Currency)
     c2 = aliased(Currency)
+
+    base_currency_json = base_currency.__dict__.copy()
+    target_currency_json = target_currency.__dict__.copy()
+
     exchange_rate = db.query(ExchangeRate) \
         .join(c1, ExchangeRate.base_currency_id == c1.id) \
         .join(c2, ExchangeRate.target_currency_id == c2.id) \
@@ -150,7 +154,22 @@ def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
     exchange_rate.rate = rate
     db.commit()
     db.refresh(exchange_rate)
-    return exchange_rate
+
+    exchange_rate_json = exchange_rate.__dict__.copy()
+
+    exchange_rate_json["rate"] = round(float(exchange_rate_json["rate"]), 2)
+
+    del exchange_rate_json["_sa_instance_state"]
+    del base_currency_json["_sa_instance_state"]
+    del target_currency_json["_sa_instance_state"]
+
+    exchange_rate_json.pop("base_currency_id")
+    exchange_rate_json.pop("target_currency_id")
+
+    exchange_rate_json["base_currency"] = base_currency_json
+    exchange_rate_json["target_currency"] = target_currency_json
+
+    return exchange_rate_json
 
 
 @router.delete("/{exchange_pair}")

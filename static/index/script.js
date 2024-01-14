@@ -1,3 +1,5 @@
+// Currencies block
+
 async function getCurrencies() {
   const response = await fetch("/currencies", {
     method: "GET",
@@ -10,18 +12,36 @@ async function getCurrencies() {
   }
 }
 
-async function getExchangeRates() {
-  const response = await fetch("/exchangeRates", {
-    method: "GET",
-    headers: { "Accept": "application/json" }
+async function addCurrency(event) {
+  event.preventDefault();
+
+  const nameInput = document.getElementById("cname");
+  const codeInput = document.getElementById("ccode");
+  const signInput = document.getElementById("csign");
+
+  const response = await fetch("/currencies", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: nameInput.value, 
+      code: codeInput.value, 
+      sign: signInput.value
+    })
   });
   if (response.ok === true) {
-    const exchangeRates = await response.json();
-    const rows = document.querySelector("#exchangeTBody");
-    exchangeRates.forEach(exchangeRate => rows.append(exchangeRateRow(exchangeRate)));
+    const currency = await response.json();
+    const rows = document.querySelector("#currenciesTBody");
+    rows.append(currencyRow(currency));
+    nameInput.value = "",
+    codeInput.value = "",
+    signInput.value = ""
   }
 }
 
+// for later
 // async function getCurrency(code) {
 //     const response = await fetch(`/currencies/${code}`, {
 //         method: "GET",
@@ -39,58 +59,86 @@ async function getExchangeRates() {
 //     }
 // }
 
-// async function createCurrency(userName, userAge) {
-//     const response = await fetch("/currencies", {
-//         method: "POST",
-//         headers: { "Accept": "application/json", "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//             name: userName,
-//             age: parseInt(userAge, 10)
-//         })
-//     });
-//     if (response.ok === true) {
-//         const user = await response.json();
-//         document.querySelector("tbody").append(row(user));
-//     }
-//     else {
-//         const error = await response.json();
-//         console.log(error.message);
-//     }
-// }
-
-// async function editUser(userId, userName, userAge) {
-//     const response = await fetch("api/users", {
-//         method: "PUT",
-//         headers: { "Accept": "application/json", "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//             id: userId,
-//             name: userName,
-//             age: parseInt(userAge, 10)
-//         })
-//     });
-//     if (response.ok === true) {
-//         const user = await response.json();
-//         document.querySelector(`tr[data-rowid='${user.id}']`).replaceWith(row(user));
-//     }
-//     else {
-//         const error = await response.json();
-//         console.log(error.message);
-//     }
-// }
-
 async function deleteCurrency(code) {
-    const response = await fetch(`/currencies/${code}`, {
-        method: "DELETE",
-        headers: { "Accept": "application/json" }
-    });
-    if (response.ok === true) {
-        const currency = await response.json();
-        document.querySelector(`tr[data-rowid='${"currency" + currency.id}']`).remove();
-    }
-    else {
-        const error = await response.json();
-        console.log(error.message);
-    }
+  const response = await fetch(`/currencies/${code}`, {
+      method: "DELETE",
+      headers: { "Accept": "application/json" }
+  });
+  if (response.ok === true) {
+      const currency = await response.json();
+      document.querySelector(`tr[data-rowid='${"currency" + currency.id}']`).remove();
+  }
+  else {
+      const error = await response.json();
+      console.log(error.message);
+  }
+}
+
+// Exchange Rates block
+
+async function getExchangeRates() {
+  const response = await fetch("/exchangeRates", {
+    method: "GET",
+    headers: { "Accept": "application/json" }
+  });
+  if (response.ok === true) {
+    const exchangeRates = await response.json();
+    const rows = document.querySelector("#exchangeTBody");
+    rows.innerHTML = "";
+    exchangeRates.forEach(exchangeRate => rows.append(exchangeRateRow(exchangeRate)));
+  }
+}
+
+async function addExchangeRate(event) {
+  const baseCurrencyCodeInput = document.getElementById("erbccode");
+  const targetCurrencyCodeInput = document.getElementById("ertccode");
+  const rateInput = document.getElementById("errate");
+  
+  const response = await fetch("/exchangeRates", {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      baseCurrencyCode: baseCurrencyCodeInput.value, 
+      targetCurrencyCode: targetCurrencyCodeInput.value, 
+      rate: rateInput.value
+    })
+  });
+  if (response.ok === true) {
+    const exchangeRate = await response.json();
+    const rows = document.querySelector("#exchangeTBody");
+    rows.append(exchangeRateRow(exchangeRate));
+    
+    baseCurrencyCodeInput.value = "";
+    targetCurrencyCodeInput.value = "";
+    rateInput.value = "";
+  }
+}
+
+async function editExchangeRate(event) {
+  const baseCurrencyCodeInput = document.getElementById("erbccode");
+  const targetCurrencyCodeInput = document.getElementById("ertccode");
+  const rateInput = document.getElementById("errate");
+  
+  const response = await fetch(`/exchangeRates/${erpair.value}`, {
+    method: "PATCH",
+    headers: {    
+      "Accept": "application/json",
+      "Content-Type": "application/json"
+    },
+    body: parseFloat(rateInput.value)
+  });
+  if (response.ok === true) {
+    const exchangeRate = await response.json();
+    document.querySelector(`tr[data-rowid='${"exchangeRate" + exchangeRate.id}']`).replaceWith(exchangeRateRow(exchangeRate));
+    
+    erpair.value = "";
+    baseCurrencyCodeInput.value = "";
+    targetCurrencyCodeInput.value = "";
+    rateInput.value = "";
+  }
 }
 
 async function deleteExchangeRate(pair) {
@@ -108,12 +156,58 @@ async function deleteExchangeRate(pair) {
   }
 }
 
-// сброс данных формы после отправки
-function reset() {
-    
+// Exchange block
+
+async function exchange(event) {
+  event.preventDefault();
+  
+  const baseCode = document.getElementById("baseCode").value;
+  const targetCode = document.getElementById("targetCode").value;
+  const amount = document.getElementById("amount").value;
+  const convertedAmountSpan = document.getElementById("convertedAmount")
+
+  const response = await fetch(`/exchange?baseCode=${baseCode}&targetCode=${targetCode}&amount=${amount}`, {
+    method: "GET",
+    headers: { "Accept": "application/json" }
+  });
+  if (response.ok === true) {
+    const exchange = await response.json();
+    convertedAmountSpan.innerHTML = exchange.converted_amount;
+  }
+  else {
+    const error = await response.json();
+    console.log(error.message);
+  }
 }
 
-// создание строки для таблицы валют
+// Helper functions
+
+async function addOrEditExchangeRate(event) {
+  event.preventDefault();
+
+  if (document.getElementById("erpair").value === "") {
+    addExchangeRate(event);
+  }
+  else {
+    editExchangeRate(event)
+  }
+}
+
+// on edit button click
+async function enableEditModeExchangeRate(exchangeRate) {
+  
+  const erpair = document.getElementById("erpair");
+  const baseCurrencyCodeInput = document.getElementById("erbccode");
+  const targetCurrencyCodeInput = document.getElementById("ertccode");
+  const rateInput = document.getElementById("errate");
+
+  erpair.value = exchangeRate.base_currency.code + exchangeRate.target_currency.code;
+  baseCurrencyCodeInput.value = exchangeRate.base_currency.code;
+  targetCurrencyCodeInput.value = exchangeRate.target_currency.code;
+  rateInput.value = exchangeRate.rate;
+}
+
+// add row in currencies table
 function currencyRow(currency) {
     const tr = document.createElement("tr");
     tr.setAttribute("data-rowid", "currency" + currency.id);
@@ -132,11 +226,6 @@ function currencyRow(currency) {
 
     const linksTd = document.createElement("td");
 
-    // const editLink = document.createElement("button"); 
-    // editLink.append("Изменить");
-    // editLink.addEventListener("click", async() => await getCurrency(user.id));
-    // linksTd.append(editLink);
-
     const removeLink = document.createElement("button"); 
     removeLink.append("delete");
     removeLink.addEventListener("click", async () => await deleteCurrency(currency.code));
@@ -147,7 +236,7 @@ function currencyRow(currency) {
     return tr;
 }
 
-// создание строки для таблицы обменных курсов
+// add row in exchange rates table
 function exchangeRateRow(exchangeRate) {
   const tr = document.createElement("tr");
   tr.setAttribute("data-rowid", "exchangeRate" + exchangeRate.id);
@@ -156,20 +245,16 @@ function exchangeRateRow(exchangeRate) {
   pairTd.innerHTML = `<a href="/exchangeRates/${exchangeRate.base_currency.code + exchangeRate.target_currency.code}">${exchangeRate.base_currency.code}/${exchangeRate.target_currency.code}</a>`;
   tr.append(pairTd);
 
-  // const codeTd = document.createElement("td");
-  // codeTd.append(exchangeRate.target_currency.code);
-  // tr.append(codeTd);
-
   const rateTd = document.createElement("td");
   rateTd.append(exchangeRate.rate);
   tr.append(rateTd);
 
   const linksTd = document.createElement("td");
 
-  // const editLink = document.createElement("button"); 
-  // editLink.append("Изменить");
-  // editLink.addEventListener("click", async() => await getexchangeRate(user.id));
-  // linksTd.append(editLink);
+  const editLink = document.createElement("button"); 
+  editLink.append("edit");
+  editLink.addEventListener("click", async() => await enableEditModeExchangeRate(exchangeRate));
+  linksTd.append(editLink);
 
   const removeLink = document.createElement("button"); 
   removeLink.append("delete");
@@ -181,100 +266,12 @@ function exchangeRateRow(exchangeRate) {
   return tr;
 }
 
+// on full page load
 document.addEventListener("DOMContentLoaded", function() {
     getCurrencies();
     getExchangeRates();
 
-    const exchangeButton = document.getElementById("exchangeButton");
-    const convertedAmountSpan = document.getElementById("convertedAmount")
-
-    exchangeButton.addEventListener("click", async function(event) {
-      event.preventDefault();
-      
-      const baseCode = document.getElementById("baseCode").value;
-      const targetCode = document.getElementById("targetCode").value;
-      const amount = document.getElementById("amount").value;
-
-      const response = await fetch(`/exchange?baseCode=${baseCode}&targetCode=${targetCode}&amount=${amount}`, {
-        method: "GET",
-        headers: { "Accept": "application/json" }
-      });
-      if (response.ok === true) {
-        const exchange = await response.json();
-        convertedAmountSpan.innerHTML = exchange.converted_amount;
-      }
-    });
-
-    const addCurrencyButton = document.getElementById("cadd");
-    addCurrencyButton.addEventListener("click", async function(event) {
-      event.preventDefault();
-
-      const nameInput = document.getElementById("cname");
-      const codeInput = document.getElementById("ccode");
-      const signInput = document.getElementById("csign");
-
-      const response = await fetch("/currencies", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name: nameInput.value, 
-          code: codeInput.value, 
-          sign: signInput.value
-        })
-      });
-      if (response.ok === true) {
-        const currency = await response.json();
-        const rows = document.querySelector("#currenciesTBody");
-        rows.append(currencyRow(currency));
-        nameInput.value = "",
-        codeInput.value = "",
-        signInput.value = ""
-      }
-    });
-
-    const addExchangeRateButton = document.getElementById("eradd");
-    addExchangeRateButton.addEventListener("click", async function(event) {
-      event.preventDefault();
-
-      const baseCurrencyCodeInput = document.getElementById("erbccode");
-      const targetCurrencyCodeInput = document.getElementById("ertccode");
-      const rateInput = document.getElementById("errate");
-
-      const response = await fetch("/exchangeRates", {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          baseCurrencyCode: baseCurrencyCodeInput.value, 
-          targetCurrencyCode: targetCurrencyCodeInput.value, 
-          rate: rateInput.value
-        })
-      });
-      if (response.ok === true) {
-        const exchangeRate = await response.json();
-        const rows = document.querySelector("#exchangeTBody");
-        rows.append(exchangeRateRow(exchangeRate));
-        baseCurrencyCodeInput.value = "",
-        targetCurrencyCodeInput.value = "",
-        rateInput.value = ""
-      }
-    });
-
-
-    // // отправка формы
-    // document.getElementById("saveBtn").addEventListener("click", async () => {
-    //     const id = document.getElementById("userId").value;
-    //     const name = document.getElementById("userName").value;
-    //     const age = document.getElementById("userAge").value;
-    //     if (id === "")
-    //         await createUser(name, age);
-    //     else
-    //         await editUser(id, name, age);
-    //     reset();
-    // });
+    document.getElementById("exchangeButton").addEventListener("click", async() => await exchange(event));
+    document.getElementById("cadd").addEventListener("click", async() => await addCurrency(event));
+    document.getElementById("eradd").addEventListener("click", async() => await addOrEditExchangeRate(event));
 })

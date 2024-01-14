@@ -8,7 +8,7 @@
   <link href="{{ url_for('static', path='index/styles.css') }}" rel="stylesheet">
 </head>
 <body>
-  <h2>Currencies (<a href="/currencies">JSON</a>)</h2>
+  <h3>Currencies (<a href="/currencies">JSON</a>)</h3>
   <table border="1" cellpadding="5">
       <thead>
         <tr>
@@ -24,7 +24,7 @@
 
   <hr>
  
-  <h3>Add new currency</h3>
+  <h3>Add currency</h3>
   <form method="POST">
     <p>Name <input type="text"  id="cname"></p>
     <p>Code <input type="text" id="ccode" maxlength="3"></p>
@@ -34,7 +34,7 @@
 
   <hr>
 
-  <h2>Exchange rates (<a href="/exchangeRates">JSON</a>)</h2>
+  <h3>Exchange rates (<a href="/exchangeRates">JSON</a>)</h3>
   <table border="1" cellpadding="5">
       <thead>
         <tr>
@@ -49,17 +49,18 @@
 
   <hr>
 
-  <h3>Add new exchange rate</h3>
+  <h3>Add exchange rate</h3>
   <form method="POST">
+    <input type="hidden" id="erpair" >
     <p>Base currency code <input type="text" id="erbccode" maxlength="3"></p>
     <p>Target currency code <input type="text" id="ertccode" maxlength="3"></p>
     <p>Rate <input type="text" id="errate"></p>
-    <p><input id="eradd" type="submit" value="add"></p>
+    <p><input id="eradd" type="submit" value="save"></p>
   </form>
 
   <hr>
 
-  <h2>Exchange</h2>
+  <h3>Exchange</h3>
   <form method="get">
     <p>Base currency code <input type="text" id="baseCode" maxlength="3"></p>
     <p>Target currency code <input type="text" id="targetCode" maxlength="3"></p>
@@ -71,19 +72,3 @@
   </form>
 </body>
 </html>
-
-<!-- <div>
-      <input type="hidden" id="userId" />
-      <p>
-          Имя:<br/>
-          <input id="userName" />
-      </p>
-      <p>
-          Возраст:<br />
-          <input id="userAge" type="number" />
-      </p>
-       <p>
-          <button id="saveBtn">Сохранить</button>
-          <button id="resetBtn">Сбросить</button>
-      </p>
-  </div> -->
