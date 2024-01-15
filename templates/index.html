@@ -25,12 +25,12 @@
   <hr>
  
   <h3>Add currency</h3>
-  <form method="POST">
+  <form>
     <table>
-      <tr><td>Name</td><td><input type="text" id="cname"></td></tr>
-      <tr><td>Code</td><td><input type="text" id="ccode" maxlength="3"></td></tr>
-      <tr><td>Sign</td><td><input type="text" id="csign" maxlength="1"></td></tr>
-      <tr><td><input id="cadd" type="submit" value="add"></td></tr>
+      <tr><td>Name</td><td><input type="text" id="currencyName"></td></tr>
+      <tr><td>Code</td><td><input type="text" id="currencyCode" maxlength="3"></td></tr>
+      <tr><td>Sign</td><td><input type="text" id="currencySign" maxlength="1"></td></tr>
+      <tr><td><input id="addCurrency" type="submit" value="add"></td></tr>
     </table>
   </form>
 
@@ -52,13 +52,13 @@
   <hr>
 
   <h3>Add exchange rate</h3>
-  <form method="POST">
-    <input type="hidden" id="erpair">
+  <form>
+    <input type="hidden" id="exchangeRatePair">
     <table>
-      <tr><td>Base currency code</td><td><input type="text" id="erbccode" maxlength="3"></td></tr>
-      <tr><td>Target currency code</td><td><input type="text" id="ertccode" maxlength="3"></td></tr>
-      <tr><td>Rate</td><td><input type="text" id="errate"></td></tr>
-      <tr><td><input id="eradd" type="submit" value="save"></td></tr>
+      <tr><td>Base currency code</td><td><input type="text" id="baseCurrencyCode" maxlength="3"></td></tr>
+      <tr><td>Target currency code</td><td><input type="text" id="targetCurrencyCode" maxlength="3"></td></tr>
+      <tr><td>Rate</td><td><input type="text" id="exchangeRate"></td></tr>
+      <tr><td><input id="addExchangeRate" type="submit" value="save"></td></tr>
     </table>
   </form>
 

@@ -15,9 +15,9 @@ async function getCurrencies() {
 async function addCurrency(event) {
   event.preventDefault();
 
-  const nameInput = document.getElementById("cname");
-  const codeInput = document.getElementById("ccode");
-  const signInput = document.getElementById("csign");
+  const nameInput = document.getElementById("currencyName");
+  const codeInput = document.getElementById("currencyCode");
+  const signInput = document.getElementById("currencySign");
 
   const response = await fetch("/currencies", {
     method: "POST",
@@ -89,10 +89,10 @@ async function getExchangeRates() {
   }
 }
 
-async function addExchangeRate(event) {
-  const baseCurrencyCodeInput = document.getElementById("erbccode");
-  const targetCurrencyCodeInput = document.getElementById("ertccode");
-  const rateInput = document.getElementById("errate");
+async function addExchangeRate() {
+  const baseCurrencyCodeInput = document.getElementById("baseCurrencyCode");
+  const targetCurrencyCodeInput = document.getElementById("targetCurrencyCode");
+  const rateInput = document.getElementById("exchangeRate");
   
   const response = await fetch("/exchangeRates", {
     method: "POST",
@@ -117,12 +117,13 @@ async function addExchangeRate(event) {
   }
 }
 
-async function editExchangeRate(event) {
-  const baseCurrencyCodeInput = document.getElementById("erbccode");
-  const targetCurrencyCodeInput = document.getElementById("ertccode");
-  const rateInput = document.getElementById("errate");
+async function editExchangeRate() {
+  const exchangeRatePair = document.getElementById("exchangeRatePair");
+  const baseCurrencyCodeInput = document.getElementById("baseCurrencyCode");
+  const targetCurrencyCodeInput = document.getElementById("targetCurrencyCode");
+  const rateInput = document.getElementById("exchangeRate");
   
-  const response = await fetch(`/exchangeRates/${erpair.value}`, {
+  const response = await fetch(`/exchangeRates/${exchangeRatePair.value}`, {
     method: "PATCH",
     headers: {    
       "Accept": "application/json",
@@ -134,7 +135,7 @@ async function editExchangeRate(event) {
     const exchangeRate = await response.json();
     document.querySelector(`tr[data-rowid='${"exchangeRate" + exchangeRate.id}']`).replaceWith(exchangeRateRow(exchangeRate));
     
-    erpair.value = "";
+    exchangeRatePair.value = "";
     baseCurrencyCodeInput.value = "";
     targetCurrencyCodeInput.value = "";
     rateInput.value = "";
@@ -185,23 +186,23 @@ async function exchange(event) {
 async function addOrEditExchangeRate(event) {
   event.preventDefault();
 
-  if (document.getElementById("erpair").value === "") {
-    addExchangeRate(event);
+  if (document.getElementById("exchangeRatePair").value === "") {
+    addExchangeRate();
   }
   else {
-    editExchangeRate(event)
+    editExchangeRate()
   }
 }
 
 // on edit button click
 async function enableEditModeExchangeRate(exchangeRate) {
   
-  const erpair = document.getElementById("erpair");
-  const baseCurrencyCodeInput = document.getElementById("erbccode");
-  const targetCurrencyCodeInput = document.getElementById("ertccode");
-  const rateInput = document.getElementById("errate");
+  const exchangeRatePair = document.getElementById("exchangeRatePair");
+  const baseCurrencyCodeInput = document.getElementById("baseCurrencyCode");
+  const targetCurrencyCodeInput = document.getElementById("targetCurrencyCode");
+  const rateInput = document.getElementById("exchangeRate");
 
-  erpair.value = exchangeRate.base_currency.code + exchangeRate.target_currency.code;
+  exchangeRatePair.value = exchangeRate.base_currency.code + exchangeRate.target_currency.code;
   baseCurrencyCodeInput.value = exchangeRate.base_currency.code;
   targetCurrencyCodeInput.value = exchangeRate.target_currency.code;
   rateInput.value = exchangeRate.rate;
@@ -271,7 +272,7 @@ document.addEventListener("DOMContentLoaded", function() {
     getCurrencies();
     getExchangeRates();
 
-    document.getElementById("exchangeButton").addEventListener("click", async() => await exchange(event));
-    document.getElementById("cadd").addEventListener("click", async() => await addCurrency(event));
-    document.getElementById("eradd").addEventListener("click", async() => await addOrEditExchangeRate(event));
+    document.getElementById("exchangeButton").addEventListener("click", exchange);
+    document.getElementById("addCurrency").addEventListener("click", addCurrency);
+    document.getElementById("addExchangeRate").addEventListener("click", addOrEditExchangeRate);
 })
