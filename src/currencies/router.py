@@ -1,11 +1,11 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from src.currencies.models import Currency
 from src.database import get_db
-
 
 router = APIRouter(
     prefix="/currencies",

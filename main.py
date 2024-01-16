@@ -1,17 +1,17 @@
 import uvicorn
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy_utils import database_exists
-from src.exchange_rates.models import ExchangeRate
-from src.currencies.models import Currency
-from src.database import engine, Base, db
-from src.currencies.router import router as router_currencies
-from src.exchange_rates.router import router as router_exchange_rates
-from src.exchange.router import router as router_exchange
 
+from src.currencies.models import Currency
+from src.currencies.router import router as router_currencies
+from src.database import Base, db, engine
+from src.exchange.router import router as router_exchange
+from src.exchange_rates.models import ExchangeRate
+from src.exchange_rates.router import router as router_exchange_rates
 
 app = FastAPI(
     title="Currency Exchange"

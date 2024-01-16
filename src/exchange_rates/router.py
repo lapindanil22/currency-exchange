@@ -1,12 +1,12 @@
 from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
-from src.currencies.models import Currency
-from src.database import get_db
 from sqlalchemy.orm import Session, aliased
 
+from src.currencies.models import Currency
+from src.database import get_db
 from src.exchange_rates.models import ExchangeRate
-
 
 router = APIRouter(
     prefix="/exchangeRates",

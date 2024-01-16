@@ -1,6 +1,6 @@
 from sqlalchemy import Column, ForeignKey, Index, Integer, Numeric
-from src.currencies.models import Currency
 
+from src.currencies.models import Currency
 from src.database import Base
 
 
