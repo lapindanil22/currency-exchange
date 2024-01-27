@@ -6,11 +6,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy_utils import database_exists
 
-from src.currencies.models import Currency
+from src.currencies.model import CurrencyModel
 from src.currencies.router import router as router_currencies
 from src.database import Base, db, engine
 from src.exchange.router import router as router_exchange
-from src.exchange_rates.models import ExchangeRate
+from src.exchange_rates.model import ExchangeRateModel
 from src.exchange_rates.router import router as router_exchange_rates
 
 app = FastAPI(
@@ -68,10 +68,10 @@ def init_db():
     ]
 
     for currency in currencies:
-        db.add(Currency(**currency))
+        db.add(CurrencyModel(**currency))
 
     for exchange_rate in exchange_rates:
-        db.add(ExchangeRate(**exchange_rate))
+        db.add(ExchangeRateModel(**exchange_rate))
 
     db.commit()
     db.close()

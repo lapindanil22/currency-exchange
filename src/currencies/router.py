@@ -4,7 +4,8 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from src.currencies.models import Currency
+from .schema import Currency, CurrencyBase
+from .model import CurrencyModel
 from src.database import get_db
 
 router = APIRouter(
@@ -13,39 +14,37 @@ router = APIRouter(
 )
 
 
-@router.get("")
+@router.get("", response_model=list[Currency])
 def get_currencies(db: Session = Depends(get_db)):
-    return db.query(Currency).all()
+    return db.query(CurrencyModel).all()
 
 
-@router.get("/{code}")
+@router.post("", response_model=Currency)  # TODO right response_model?
+def post_currency(currency: Annotated[CurrencyBase, Body()],
+                  db: Session = Depends(get_db)):
+    if db.query(CurrencyModel).filter(CurrencyModel.code == currency.code).first():
+        return JSONResponse(status_code=409,
+                            content={"message": "Валюта с таким кодом уже существует"})
+    currency_model = CurrencyModel(**currency.model_dump())
+    db.add(currency_model)
+    db.commit()
+    db.refresh(currency_model)
+    return currency_model
+
+
+@router.get("/{code}", response_model=Currency)
 def get_currency_empty(code: Annotated[str, Path()],
                        db: Session = Depends(get_db)):
-    currency = db.query(Currency).filter(Currency.code == code).first()
+    currency = db.query(CurrencyModel).filter(CurrencyModel.code == code).first()
     if not currency:
         return JSONResponse(status_code=404, content={"message": "Валюта не найдена"})
     return currency
 
 
-@router.post("")
-def post_currency(name: Annotated[str, Body()],
-                  code: Annotated[str, Body()],
-                  sign: Annotated[str, Body()],
-                  db: Session = Depends(get_db)):
-    if db.query(Currency).filter(Currency.code == code).first():
-        return JSONResponse(status_code=409,
-                            content={"message": "Валюта с таким кодом уже существует"})
-    currency = Currency(name=name, code=code, sign=sign)
-    db.add(currency)
-    db.commit()
-    db.refresh(currency)
-    return currency
-
-
-@router.delete("/{code}")
+@router.delete("/{code}", response_model=Currency)
 def delete_currency(code: Annotated[str, Path()],
                     db: Session = Depends(get_db)):
-    currency = db.query(Currency).filter(Currency.code == code).first()
+    currency = db.query(CurrencyModel).filter(CurrencyModel.code == code).first()
     if not currency:
         return JSONResponse(status_code=404,
                             content={"message": "Валюта не найдена"})
