@@ -52,7 +52,7 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
         )
 
     if db.query(ExchangeRateModel).filter(ExchangeRateModel.base_currency_id == base_currency.id,
-                                     ExchangeRateModel.target_currency_id == target_currency.id).first():
+                                          ExchangeRateModel.target_currency_id == target_currency.id).first():
         return JSONResponse(status_code=409,
                             content={"message": "Валютная пара с таким кодом уже существует"})
 
@@ -60,8 +60,8 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
     target_currency_dict = target_currency.__dict__.copy()
 
     exchange_rate_model = ExchangeRateModel(base_currency_id=base_currency.id,
-                                 target_currency_id=target_currency.id,
-                                 rate=rate)
+                                            target_currency_id=target_currency.id,
+                                            rate=rate)
     db.add(exchange_rate_model)
     db.commit()
     db.refresh(exchange_rate_model)
@@ -104,9 +104,9 @@ def get_exchange_rate(exchange_pair: Annotated[str, Path()],
     del exchange_rate_dict["_sa_instance_state"]
 
     base_currency = db.query(CurrencyModel).filter(
-            CurrencyModel.id == int(exchange_rate_dict["base_currency_id"])).first()
+        CurrencyModel.id == int(exchange_rate_dict["base_currency_id"])).first()
     target_currency = db.query(CurrencyModel).filter(
-            CurrencyModel.id == int(exchange_rate_dict["target_currency_id"])).first()
+        CurrencyModel.id == int(exchange_rate_dict["target_currency_id"])).first()
 
     exchange_rate_dict["base_currency"] = base_currency.__dict__.copy()
     del exchange_rate_dict["base_currency"]["_sa_instance_state"]
