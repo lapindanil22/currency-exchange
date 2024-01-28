@@ -19,6 +19,6 @@ class ExchangeRate(ExchangeRateBase):
     id: int
     base_currency_id: int
     target_currency_id: int
-    
+
     # class Config:
     #     orm_mode = True
