@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from currencies.schema import Currency
+from currencies.schemas import Currency
 
 
 class ExchangeRateBase(BaseModel):

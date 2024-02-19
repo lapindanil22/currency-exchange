@@ -4,8 +4,8 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from .schema import Currency, CurrencyBase
-from .model import CurrencyModel
+from .schemas import Currency, CurrencyBase
+from .models import CurrencyModel
 from database import get_db
 
 router = APIRouter(

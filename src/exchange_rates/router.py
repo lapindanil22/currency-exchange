@@ -4,10 +4,10 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, aliased
 
-from currencies.model import CurrencyModel
+from currencies.models import CurrencyModel
 from database import get_db
-from .schema import ExchangeRateResponse
-from .model import ExchangeRateModel
+from .schemas import ExchangeRateResponse
+from .models import ExchangeRateModel
 
 router = APIRouter(
     prefix="/exchangeRates",
