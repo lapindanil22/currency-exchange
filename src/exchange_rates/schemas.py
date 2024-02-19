@@ -3,19 +3,16 @@ from pydantic import BaseModel
 from currencies.schemas import Currency
 
 
-class ExchangeRateBase(BaseModel):
+class _ExchangeRateBase(BaseModel):
     rate: float  # TODO make Decimal?
 
 
-# class ExchangeRate
-
-
-class ExchangeRateResponse(ExchangeRateBase):
+class ExchangeRateResponse(_ExchangeRateBase):
     base_currency: Currency
     target_currency: Currency
 
 
-class ExchangeRate(ExchangeRateBase):
+class ExchangeRate(_ExchangeRateBase):
     id: int
     base_currency_id: int
     target_currency_id: int

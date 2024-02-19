@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
 
 
-class ExchangeRateModel(Base):
+class ExchangeRateORM(Base):
     __tablename__ = "exchange_rate"
 
     id: Mapped[int] = mapped_column(primary_key=True)

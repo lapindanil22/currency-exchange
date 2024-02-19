@@ -4,10 +4,10 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, aliased
 
-from currencies.models import CurrencyModel
+from currencies.models import CurrencyORM
 from database import get_db
 from .schemas import ExchangeRateResponse
-from .models import ExchangeRateModel
+from .models import ExchangeRateORM
 
 router = APIRouter(
     prefix="/exchangeRates",
@@ -17,14 +17,14 @@ router = APIRouter(
 
 @router.get("", response_model=list[ExchangeRateResponse])
 def get_exchange_rates(db: Session = Depends(get_db)):
-    exchange_rates = db.query(ExchangeRateModel).all()
+    exchange_rates = db.query(ExchangeRateORM).all()
     exchange_rates_dict = [exchange_rate.__dict__.copy() for exchange_rate in exchange_rates]
 
     for exchange_rate in exchange_rates_dict:
-        base_currency = db.query(CurrencyModel).filter(
-            CurrencyModel.id == int(exchange_rate["base_currency_id"])).first()
-        target_currency = db.query(CurrencyModel).filter(
-            CurrencyModel.id == int(exchange_rate["target_currency_id"])).first()
+        base_currency = db.query(CurrencyORM).filter(
+            CurrencyORM.id == int(exchange_rate["base_currency_id"])).first()
+        target_currency = db.query(CurrencyORM).filter(
+            CurrencyORM.id == int(exchange_rate["target_currency_id"])).first()
         exchange_rate["base_currency"] = base_currency.__dict__.copy()
         exchange_rate["target_currency"] = target_currency.__dict__.copy()
         exchange_rate["rate"] = round(float(exchange_rate["rate"]), 2)
@@ -43,23 +43,23 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
                        targetCurrencyCode: Annotated[str, Body()],
                        rate: Annotated[float, Body()],
                        db: Session = Depends(get_db)):
-    base_currency = db.query(CurrencyModel).filter(CurrencyModel.code == baseCurrencyCode).first()
-    target_currency = db.query(CurrencyModel).filter(CurrencyModel.code == targetCurrencyCode).first()
+    base_currency = db.query(CurrencyORM).filter(CurrencyORM.code == baseCurrencyCode).first()
+    target_currency = db.query(CurrencyORM).filter(CurrencyORM.code == targetCurrencyCode).first()
     if not base_currency or not target_currency:
         return JSONResponse(
             status_code=404,
             content={"message": "Одна (или обе) валюта из валютной пары не существует в БД"}
         )
 
-    if db.query(ExchangeRateModel).filter(ExchangeRateModel.base_currency_id == base_currency.id,
-                                          ExchangeRateModel.target_currency_id == target_currency.id).first():
+    if db.query(ExchangeRateORM).filter(ExchangeRateORM.base_currency_id == base_currency.id,
+                                          ExchangeRateORM.target_currency_id == target_currency.id).first():
         return JSONResponse(status_code=409,
                             content={"message": "Валютная пара с таким кодом уже существует"})
 
     base_currency_dict = base_currency.__dict__.copy()
     target_currency_dict = target_currency.__dict__.copy()
 
-    exchange_rate_model = ExchangeRateModel(base_currency_id=base_currency.id,
+    exchange_rate_model = ExchangeRateORM(base_currency_id=base_currency.id,
                                             target_currency_id=target_currency.id,
                                             rate=rate)
     db.add(exchange_rate_model)
@@ -89,11 +89,11 @@ def get_exchange_rate(exchange_pair: Annotated[str, Path()],
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
-    c1 = aliased(CurrencyModel)
-    c2 = aliased(CurrencyModel)
-    exchange_rate = db.query(ExchangeRateModel) \
-        .join(c1, ExchangeRateModel.base_currency_id == c1.id) \
-        .join(c2, ExchangeRateModel.target_currency_id == c2.id) \
+    c1 = aliased(CurrencyORM)
+    c2 = aliased(CurrencyORM)
+    exchange_rate = db.query(ExchangeRateORM) \
+        .join(c1, ExchangeRateORM.base_currency_id == c1.id) \
+        .join(c2, ExchangeRateORM.target_currency_id == c2.id) \
         .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
 
     if not exchange_rate:
@@ -103,10 +103,10 @@ def get_exchange_rate(exchange_pair: Annotated[str, Path()],
     exchange_rate_dict = exchange_rate.__dict__.copy()
     del exchange_rate_dict["_sa_instance_state"]
 
-    base_currency = db.query(CurrencyModel).filter(
-        CurrencyModel.id == int(exchange_rate_dict["base_currency_id"])).first()
-    target_currency = db.query(CurrencyModel).filter(
-        CurrencyModel.id == int(exchange_rate_dict["target_currency_id"])).first()
+    base_currency = db.query(CurrencyORM).filter(
+        CurrencyORM.id == int(exchange_rate_dict["base_currency_id"])).first()
+    target_currency = db.query(CurrencyORM).filter(
+        CurrencyORM.id == int(exchange_rate_dict["target_currency_id"])).first()
 
     exchange_rate_dict["base_currency"] = base_currency.__dict__.copy()
     del exchange_rate_dict["base_currency"]["_sa_instance_state"]
@@ -128,23 +128,23 @@ def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
-    base_currency = db.query(CurrencyModel).filter(CurrencyModel.code == base_currency_code).first()
-    target_currency = db.query(CurrencyModel).filter(CurrencyModel.code == target_currency_code).first()
+    base_currency = db.query(CurrencyORM).filter(CurrencyORM.code == base_currency_code).first()
+    target_currency = db.query(CurrencyORM).filter(CurrencyORM.code == target_currency_code).first()
     if not base_currency or not target_currency:
         return JSONResponse(
             status_code=404,
             content={"message": "Валютная пара отсутствует в базе данных"}
         )
 
-    c1 = aliased(CurrencyModel)
-    c2 = aliased(CurrencyModel)
+    c1 = aliased(CurrencyORM)
+    c2 = aliased(CurrencyORM)
 
     base_currency_dict = base_currency.__dict__.copy()
     target_currency_dict = target_currency.__dict__.copy()
 
-    exchange_rate = db.query(ExchangeRateModel) \
-        .join(c1, ExchangeRateModel.base_currency_id == c1.id) \
-        .join(c2, ExchangeRateModel.target_currency_id == c2.id) \
+    exchange_rate = db.query(ExchangeRateORM) \
+        .join(c1, ExchangeRateORM.base_currency_id == c1.id) \
+        .join(c2, ExchangeRateORM.target_currency_id == c2.id) \
         .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
     if not exchange_rate:
         return JSONResponse(
@@ -179,11 +179,11 @@ def delete_currency(exchange_pair: Annotated[str, Path()],
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
-    c1 = aliased(CurrencyModel)
-    c2 = aliased(CurrencyModel)
-    exchange_rate = db.query(ExchangeRateModel) \
-        .join(c1, ExchangeRateModel.base_currency_id == c1.id) \
-        .join(c2, ExchangeRateModel.target_currency_id == c2.id) \
+    c1 = aliased(CurrencyORM)
+    c2 = aliased(CurrencyORM)
+    exchange_rate = db.query(ExchangeRateORM) \
+        .join(c1, ExchangeRateORM.base_currency_id == c1.id) \
+        .join(c2, ExchangeRateORM.target_currency_id == c2.id) \
         .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
 
     if not exchange_rate:
@@ -196,10 +196,10 @@ def delete_currency(exchange_pair: Annotated[str, Path()],
     exchange_rate_dict = exchange_rate.__dict__.copy()
     del exchange_rate_dict["_sa_instance_state"]
 
-    base_currency = db.query(CurrencyModel).filter(
-            CurrencyModel.id == int(exchange_rate_dict["base_currency_id"])).first()
-    target_currency = db.query(CurrencyModel).filter(
-            CurrencyModel.id == int(exchange_rate_dict["target_currency_id"])).first()
+    base_currency = db.query(CurrencyORM).filter(
+            CurrencyORM.id == int(exchange_rate_dict["base_currency_id"])).first()
+    target_currency = db.query(CurrencyORM).filter(
+            CurrencyORM.id == int(exchange_rate_dict["target_currency_id"])).first()
 
     exchange_rate_dict["base_currency"] = base_currency.__dict__.copy()
     del exchange_rate_dict["base_currency"]["_sa_instance_state"]

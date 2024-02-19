@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from database import Base
 
 
-class CurrencyModel(Base):
+class CurrencyORM(Base):
     __tablename__ = "currency"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
