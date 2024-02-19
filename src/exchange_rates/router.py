@@ -4,8 +4,8 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, aliased
 
-from src.currencies.model import CurrencyModel
-from src.database import get_db
+from currencies.model import CurrencyModel
+from database import get_db
 from .schema import ExchangeRateResponse
 from .model import ExchangeRateModel
 

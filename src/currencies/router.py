@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from .schema import Currency, CurrencyBase
 from .model import CurrencyModel
-from src.database import get_db
+from database import get_db
 
 router = APIRouter(
     prefix="/currencies",

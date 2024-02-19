@@ -2,7 +2,7 @@ import decimal
 from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
-from src.database import Base
+from database import Base
 
 
 class ExchangeRateModel(Base):
