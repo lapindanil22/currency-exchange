@@ -17,3 +17,10 @@ class CurrencyRepository:
             session.commit()
             session.refresh(currency_orm)
             return currency_orm
+
+    @classmethod
+    def get_all(cls) -> list[CurrencyWithID]:
+        with SessionLocal() as session:
+            currencies_orm = session.query(CurrencyORM).all()
+            currencies = [CurrencyWithID.model_validate(currency_orm) for currency_orm in currencies_orm]
+            return currencies

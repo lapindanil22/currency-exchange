@@ -18,7 +18,8 @@ router = APIRouter(
 
 @router.get("", response_model=list[CurrencyWithID])
 def get_currencies(db: Session = Depends(get_db)):
-    return db.query(CurrencyORM).all()
+    currencies = CurrencyRepository.get_all()
+    return currencies
 
 
 @router.post("", response_model=CurrencyWithID)  # TODO right response_model?
