@@ -22,14 +22,14 @@ def get_currencies(db: Session = Depends(get_db)):
     return currencies
 
 
-@router.post("", response_model=CurrencyWithID)  # TODO right response_model?
+@router.post("", response_model=CurrencyWithID)
 def post_currency(currency: Annotated[Currency, Body()],
                   db: Session = Depends(get_db)):
-    currency = CurrencyRepository.add(currency)
-    if currency is None:
+    currency_with_id = CurrencyRepository.add(currency)
+    if currency_with_id is None:
         return JSONResponse(status_code=409,
                             content={"message": "Валюта с таким кодом уже существует"})
-    return currency
+    return currency_with_id
 
 
 @router.get("/{code}", response_model=CurrencyWithID)
