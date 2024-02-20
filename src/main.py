@@ -21,8 +21,8 @@ app.include_router(router_currencies)
 app.include_router(router_exchange_rates)
 app.include_router(router_exchange)
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="../static"), name="static")
+templates = Jinja2Templates(directory="../templates")
 
 origins = [
     "http://localhost",
