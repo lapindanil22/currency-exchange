@@ -4,7 +4,9 @@ from fastapi import APIRouter, Body, Depends, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from .schemas import Currency, CurrencyBase
+from repository import CurrencyRepository
+
+from .schemas import CurrencyWithID, Currency
 from .models import CurrencyORM
 from database import get_db
 
@@ -14,25 +16,22 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=list[Currency])
+@router.get("", response_model=list[CurrencyWithID])
 def get_currencies(db: Session = Depends(get_db)):
     return db.query(CurrencyORM).all()
 
 
-@router.post("", response_model=Currency)  # TODO right response_model?
-def post_currency(currency: Annotated[CurrencyBase, Body()],
+@router.post("", response_model=CurrencyWithID)  # TODO right response_model?
+def post_currency(currency: Annotated[Currency, Body()],
                   db: Session = Depends(get_db)):
-    if db.query(CurrencyORM).filter(CurrencyORM.code == currency.code).first():
+    currency = CurrencyRepository.add(currency)
+    if currency is None:
         return JSONResponse(status_code=409,
                             content={"message": "Валюта с таким кодом уже существует"})
-    currency_model = CurrencyORM(**currency.model_dump())
-    db.add(currency_model)
-    db.commit()
-    db.refresh(currency_model)
-    return currency_model
+    return currency
 
 
-@router.get("/{code}", response_model=Currency)
+@router.get("/{code}", response_model=CurrencyWithID)
 def get_currency_empty(code: Annotated[str, Path()],
                        db: Session = Depends(get_db)):
     currency = db.query(CurrencyORM).filter(CurrencyORM.code == code).first()
@@ -41,7 +40,7 @@ def get_currency_empty(code: Annotated[str, Path()],
     return currency
 
 
-@router.delete("/{code}", response_model=Currency)
+@router.delete("/{code}", response_model=CurrencyWithID)
 def delete_currency(code: Annotated[str, Path()],
                     db: Session = Depends(get_db)):
     currency = db.query(CurrencyORM).filter(CurrencyORM.code == code).first()

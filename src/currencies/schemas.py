@@ -1,13 +1,13 @@
 from pydantic import BaseModel
 
 
-class CurrencyBase(BaseModel):
+class Currency(BaseModel):
     code: str
     name: str
     sign: str
 
 
-class Currency(CurrencyBase):
+class CurrencyWithID(Currency):
     id: int
 
     # class Config:
