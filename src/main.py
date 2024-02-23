@@ -1,10 +1,9 @@
-import uvicorn
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-# from sqlalchemy_utils import database_exists
 
 from currencies.models import CurrencyORM
 from currencies.router import router as router_currencies
@@ -13,8 +12,19 @@ from exchange.router import router as router_exchange
 from exchange_rates.models import ExchangeRateORM
 from exchange_rates.router import router as router_exchange_rates
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    print("База очищена")
+    print("База готова к работе")
+    yield
+    print("Выключение")
+
+
 app = FastAPI(
-    title="Currency Exchange"
+    title="Currency Exchange",
+    lifespan=lifespan
 )
 
 app.include_router(router_currencies)
@@ -45,7 +55,6 @@ def main(request: Request):
     )
 
 
-@app.on_event("startup")
 def init_db():
     Base.metadata.drop_all(bind=engine)
 
@@ -75,16 +84,3 @@ def init_db():
 
     db.commit()
     db.close()
-
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     init_db()
-#     print("База очищена")
-#     print("База готова к работе")
-#     yield
-#     print("Выключение")
-
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", port=8000)
