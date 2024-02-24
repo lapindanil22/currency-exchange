@@ -17,5 +17,7 @@ class ExchangeRate(_ExchangeRateBase):
     base_currency_id: int
     target_currency_id: int
 
-    # class Config:
-    #     orm_mode = True
+
+# class ExchangeRateRequest(_ExchangeRateBase):
+#     base_currency_code: str
+#     target_currency_code: str
