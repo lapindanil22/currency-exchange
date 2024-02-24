@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -15,9 +16,9 @@ from exchange_rates.router import router as router_exchange_rates
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
-    print("База очищена")
-    print("База готова к работе")
+    # init_db()
+    # print("База очищена")
+    # print("База готова к работе")
     yield
     print("Выключение")
 
@@ -57,7 +58,6 @@ def main(request: Request):
 
 def init_db():
     Base.metadata.drop_all(bind=engine)
-
     Base.metadata.create_all(bind=engine)
 
     currencies = [

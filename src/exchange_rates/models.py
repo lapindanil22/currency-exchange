@@ -1,8 +1,9 @@
 import decimal
+
 from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
-from database import Base
+from src.database import Base
 
 
 class ExchangeRateORM(Base):

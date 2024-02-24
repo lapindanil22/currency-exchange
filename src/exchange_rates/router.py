@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session, aliased
 
 from currencies.models import CurrencyORM
 from database import get_db
-from .schemas import ExchangeRateResponse
+
 from .models import ExchangeRateORM
+from .schemas import ExchangeRateResponse
 
 router = APIRouter(
     prefix="/exchangeRates",
@@ -52,7 +53,7 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
         )
 
     if db.query(ExchangeRateORM).filter(ExchangeRateORM.base_currency_id == base_currency.id,
-                                          ExchangeRateORM.target_currency_id == target_currency.id).first():
+                                        ExchangeRateORM.target_currency_id == target_currency.id).first():
         return JSONResponse(status_code=409,
                             content={"message": "Валютная пара с таким кодом уже существует"})
 
@@ -60,8 +61,8 @@ def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
     target_currency_dict = target_currency.__dict__.copy()
 
     exchange_rate_model = ExchangeRateORM(base_currency_id=base_currency.id,
-                                            target_currency_id=target_currency.id,
-                                            rate=rate)
+                                          target_currency_id=target_currency.id,
+                                          rate=rate)
     db.add(exchange_rate_model)
     db.commit()
     db.refresh(exchange_rate_model)
