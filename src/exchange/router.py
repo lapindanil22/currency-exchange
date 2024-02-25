@@ -2,10 +2,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy import select
+from sqlalchemy.orm import aliased
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from currencies.models import CurrencyORM
-from database import get_db
+from database import get_async_session
 from exchange_rates.models import ExchangeRateORM
 
 router = APIRouter(
@@ -15,13 +17,19 @@ router = APIRouter(
 
 
 @router.get("")
-def get_exchange(baseCode: Annotated[str, Query()],
-                 targetCode: Annotated[str, Query()],
-                 amount: Annotated[float, Query()],
-                 db: Session = Depends(get_db)):
-    base_currency = db.query(CurrencyORM).filter(CurrencyORM.code == baseCode).first()
-    target_currency = db.query(CurrencyORM).filter(CurrencyORM.code == targetCode).first()
-    if not base_currency or not target_currency:
+async def get_exchange(baseCode: Annotated[str, Query()],
+                       targetCode: Annotated[str, Query()],
+                       amount: Annotated[float, Query()],
+                       session: AsyncSession = Depends(get_async_session)):
+    query = select(CurrencyORM).filter(CurrencyORM.code == baseCode)
+    result = await session.execute(query)
+    base_currency = result.scalar_one_or_none()
+
+    query = select(CurrencyORM).filter(CurrencyORM.code == targetCode)
+    result = await session.execute(query)
+    target_currency = result.scalar_one_or_none()
+
+    if base_currency is None or target_currency is None:
         return JSONResponse(
             status_code=404,
             content={"message": "Одна (или обе) валюта из валютной пары не существует в БД"}
@@ -29,19 +37,27 @@ def get_exchange(baseCode: Annotated[str, Query()],
 
     c1 = aliased(CurrencyORM)
     c2 = aliased(CurrencyORM)
-    exchange_rate = db.query(ExchangeRateORM) \
+
+    query = select(ExchangeRateORM) \
         .join(c1, ExchangeRateORM.base_currency_id == c1.id) \
         .join(c2, ExchangeRateORM.target_currency_id == c2.id) \
-        .filter(c1.code == baseCode, c2.code == targetCode).first()
+        .filter(c1.code == baseCode, c2.code == targetCode)
+    result = await session.execute(query)
+    exchange_rate = result.scalar_one_or_none()
 
-    if not exchange_rate:
+    if exchange_rate is None:
         return JSONResponse(
             status_code=404,
             content={"message": "Обменный курс для пары не найден"}
         )
 
-    base_currency = db.query(CurrencyORM).filter(CurrencyORM.code == baseCode).first()
-    target_currency = db.query(CurrencyORM).filter(CurrencyORM.code == targetCode).first()
+    query = select(CurrencyORM).filter(CurrencyORM.code == baseCode)
+    result = await session.execute(query)
+    base_currency = result.scalar_one()
+
+    query = select(CurrencyORM).filter(CurrencyORM.code == targetCode)
+    result = await session.execute(query)
+    target_currency = result.scalar_one()
 
     base_currency_dict = base_currency.__dict__.copy()
     target_currency_dict = target_currency.__dict__.copy()

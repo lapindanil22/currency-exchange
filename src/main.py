@@ -8,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from currencies.models import CurrencyORM
 from currencies.router import router as router_currencies
-from database import Base, db, engine
+from database import async_session_maker, create_all_tables, drop_all_tables
 from exchange.router import router as router_exchange
 from exchange_rates.models import ExchangeRateORM
 from exchange_rates.router import router as router_exchange_rates
@@ -16,9 +16,9 @@ from exchange_rates.router import router as router_exchange_rates
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # init_db()
-    # print("База очищена")
-    # print("База готова к работе")
+    await init_db()
+    print("База очищена")
+    print("База готова к работе")
     yield
     print("Выключение")
 
@@ -56,9 +56,9 @@ def main(request: Request):
     )
 
 
-def init_db():
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+async def init_db():
+    await drop_all_tables()
+    await create_all_tables()
 
     currencies = [
         {"name": "US Dollar", "code": "USD", "sign": "$"},
@@ -76,11 +76,12 @@ def init_db():
         {"base_currency_id": 1, "target_currency_id": 3, "rate": 0.91},
     ]
 
-    for currency in currencies:
-        db.add(CurrencyORM(**currency))
+    async with async_session_maker() as session:
+        for currency in currencies:
+            session.add(CurrencyORM(**currency))
 
-    for exchange_rate in exchange_rates:
-        db.add(ExchangeRateORM(**exchange_rate))
+        # for exchange_rate in exchange_rates:
+        #     session.add(ExchangeRateORM(**exchange_rate))
 
-    db.commit()
-    db.close()
+        await session.flush()
+        await session.commit()

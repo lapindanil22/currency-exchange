@@ -1,48 +1,57 @@
 from typing import Optional
 
+from sqlalchemy import select
+
 from currencies.models import CurrencyORM
 from currencies.schemas import Currency, CurrencyWithID
-from database import SessionLocal
+from database import async_session_maker
 
 
 class CurrencyRepository:
     @classmethod
-    def get_all(cls) -> list[CurrencyWithID]:
-        with SessionLocal() as session:
-            currencies_orm = session.query(CurrencyORM).all()
+    async def get_all(cls) -> list[CurrencyWithID]:
+        async with async_session_maker() as session:
+            query = select(CurrencyORM)
+            result = await session.execute(query)
+            currencies_orm = result.scalars().all()
             currencies = [CurrencyWithID.model_validate(currency_orm) for currency_orm in currencies_orm]
             return currencies
 
     @classmethod
-    def add(cls, data: Currency) -> Optional[CurrencyWithID]:
-        with SessionLocal() as session:
-            if session.query(CurrencyORM).filter(CurrencyORM.code == data.code).first():
+    async def add(cls, data: Currency) -> Optional[CurrencyWithID]:
+        async with async_session_maker() as session:
+            query = select(CurrencyORM).filter(CurrencyORM.code == data.code)
+            result = await session.execute(query)
+            if result.scalar_one_or_none() is not None:
                 return None
-
             currency_dict = data.model_dump()
             currency_orm = CurrencyORM(**currency_dict)
             session.add(currency_orm)
-            session.commit()
-            session.refresh(currency_orm)
+            await session.flush()
+            await session.commit()
             return currency_orm
 
     @classmethod
-    def get_by_code(cls, code: str) -> Optional[CurrencyWithID]:
-        with SessionLocal() as session:
-            currency_orm = session.query(CurrencyORM).filter(CurrencyORM.code == code).first()
+    async def get_by_code(cls, code: str) -> Optional[CurrencyWithID]:
+        async with async_session_maker() as session:
+            query = select(CurrencyORM).filter(CurrencyORM.code == code)
+            result = await session.execute(query)
+            currency_orm = result.scalar_one_or_none()
             if currency_orm is None:
                 return None
             currency = CurrencyWithID.model_validate(currency_orm)
             return currency
 
     @classmethod
-    def delete(cls, code: str) -> Optional[CurrencyWithID]:
-        with SessionLocal() as session:
-            currency = session.query(CurrencyORM).filter(CurrencyORM.code == code).first()
+    async def delete(cls, code: str) -> Optional[CurrencyWithID]:
+        async with async_session_maker() as session:
+            query = select(CurrencyORM).filter(CurrencyORM.code == code)
+            result = await session.execute(query)
+            currency = result.scalar_one_or_none()
             if currency is None:
                 return None
-            session.delete(currency)
-            session.commit()
+            await session.delete(currency)
+            await session.commit()
             return currency
 
 
