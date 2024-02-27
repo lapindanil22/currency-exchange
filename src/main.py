@@ -80,8 +80,8 @@ async def init_db():
         for currency in currencies:
             session.add(CurrencyORM(**currency))
 
-        # for exchange_rate in exchange_rates:
-        #     session.add(ExchangeRateORM(**exchange_rate))
+        for exchange_rate in exchange_rates:
+            session.add(ExchangeRateORM(**exchange_rate))
 
         await session.flush()
         await session.commit()

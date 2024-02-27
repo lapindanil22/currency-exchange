@@ -21,14 +21,21 @@ router = APIRouter(
 @router.get("", response_model=list[ExchangeRateResponse])
 async def get_exchange_rates(session: AsyncSession = Depends(get_async_session)):
     query = select(ExchangeRateORM)
-    exchange_rates = await session.execute(query)
+    result = await session.execute(query)
+    exchange_rates = result.scalars()
     exchange_rates_dict = [exchange_rate.__dict__.copy() for exchange_rate in exchange_rates]
 
     for exchange_rate in exchange_rates_dict:
-        base_currency = session.query(CurrencyORM).filter(
-            CurrencyORM.id == int(exchange_rate["base_currency_id"])).first()
-        target_currency = session.query(CurrencyORM).filter(
-            CurrencyORM.id == int(exchange_rate["target_currency_id"])).first()
+        query = select(CurrencyORM).filter(
+            CurrencyORM.id == int(exchange_rate["base_currency_id"]))
+        result = await session.execute(query)
+        base_currency = result.scalar_one_or_none()
+
+        query = select(CurrencyORM).filter(
+            CurrencyORM.id == int(exchange_rate["target_currency_id"]))
+        result = await session.execute(query)
+        target_currency = result.scalar_one_or_none()
+
         exchange_rate["base_currency"] = base_currency.__dict__.copy()
         exchange_rate["target_currency"] = target_currency.__dict__.copy()
         exchange_rate["rate"] = round(float(exchange_rate["rate"]), 2)
@@ -44,19 +51,29 @@ async def get_exchange_rates(session: AsyncSession = Depends(get_async_session))
 
 @router.post("", response_model=ExchangeRateResponse)
 async def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
-                       targetCurrencyCode: Annotated[str, Body()],
-                       rate: Annotated[float, Body()],
-                       session: AsyncSession = Depends(get_async_session)):
-    base_currency = session.query(CurrencyORM).filter(CurrencyORM.code == baseCurrencyCode).first()
-    target_currency = session.query(CurrencyORM).filter(CurrencyORM.code == targetCurrencyCode).first()
-    if not base_currency or not target_currency:
+                             targetCurrencyCode: Annotated[str, Body()],
+                             rate: Annotated[float, Body()],
+                             session: AsyncSession = Depends(get_async_session)):
+
+    query = select(CurrencyORM).filter(CurrencyORM.code == baseCurrencyCode)
+    result = await session.execute(query)
+    base_currency = result.scalar_one_or_none()
+
+    query = select(CurrencyORM).filter(CurrencyORM.code == targetCurrencyCode)
+    result = await session.execute(query)
+    target_currency = result.scalar_one_or_none()
+
+    if base_currency is None or target_currency is None:
         return JSONResponse(
             status_code=404,
             content={"message": "Одна (или обе) валюта из валютной пары не существует в БД"}
         )
 
-    if session.query(ExchangeRateORM).filter(ExchangeRateORM.base_currency_id == base_currency.id,
-                                        ExchangeRateORM.target_currency_id == target_currency.id).first():
+    query = select(ExchangeRateORM).filter(ExchangeRateORM.base_currency_id == base_currency.id,
+                                           ExchangeRateORM.target_currency_id == target_currency.id)
+    result = await session.execute(query)
+
+    if result.scalar_one_or_none() is not None:
         return JSONResponse(status_code=409,
                             content={"message": "Валютная пара с таким кодом уже существует"})
 
@@ -67,8 +84,8 @@ async def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
                                           target_currency_id=target_currency.id,
                                           rate=rate)
     session.add(exchange_rate_model)
-    session.commit()
-    session.refresh(exchange_rate_model)
+    await session.flush()
+    await session.commit()
 
     exchange_rate_model_dict = exchange_rate_model.__dict__.copy()
 
@@ -89,28 +106,38 @@ async def post_exchange_rate(baseCurrencyCode: Annotated[str, Body()],
 
 @router.get("/{exchange_pair}", response_model=ExchangeRateResponse)
 async def get_exchange_rate(exchange_pair: Annotated[str, Path()],
-                      session: AsyncSession = Depends(get_async_session)):
+                            session: AsyncSession = Depends(get_async_session)):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
     c1 = aliased(CurrencyORM)
     c2 = aliased(CurrencyORM)
-    exchange_rate = session.query(ExchangeRateORM) \
+
+    query = select(ExchangeRateORM) \
         .join(c1, ExchangeRateORM.base_currency_id == c1.id) \
         .join(c2, ExchangeRateORM.target_currency_id == c2.id) \
-        .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
+        .filter(c1.code == base_currency_code, c2.code == target_currency_code)
 
-    if not exchange_rate:
+    result = await session.execute(query)
+
+    exchange_rate = result.scalar_one_or_none()
+
+    if exchange_rate is None:
         return JSONResponse(status_code=404,
                             content={"message": "Обменный курс для пары не найден"})
 
     exchange_rate_dict = exchange_rate.__dict__.copy()
     del exchange_rate_dict["_sa_instance_state"]
 
-    base_currency = session.query(CurrencyORM).filter(
-        CurrencyORM.id == int(exchange_rate_dict["base_currency_id"])).first()
-    target_currency = session.query(CurrencyORM).filter(
-        CurrencyORM.id == int(exchange_rate_dict["target_currency_id"])).first()
+    query = select(CurrencyORM).filter(
+        CurrencyORM.id == int(exchange_rate_dict["base_currency_id"]))
+    result = await session.execute(query)
+    base_currency = result.scalar_one_or_none()
+
+    query = select(CurrencyORM).filter(
+        CurrencyORM.id == int(exchange_rate_dict["target_currency_id"]))
+    result = await session.execute(query)
+    target_currency = result.scalar_one_or_none()
 
     exchange_rate_dict["base_currency"] = base_currency.__dict__.copy()
     del exchange_rate_dict["base_currency"]["_sa_instance_state"]
@@ -127,14 +154,20 @@ async def get_exchange_rate(exchange_pair: Annotated[str, Path()],
 
 @router.patch("/{exchange_pair}", response_model=ExchangeRateResponse)
 async def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
-                        rate: Annotated[float, Body()],
-                        session: AsyncSession = Depends(get_async_session)):
+                              rate: Annotated[float, Body()],
+                              session: AsyncSession = Depends(get_async_session)):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
-    base_currency = session.query(CurrencyORM).filter(CurrencyORM.code == base_currency_code).first()
-    target_currency = session.query(CurrencyORM).filter(CurrencyORM.code == target_currency_code).first()
-    if not base_currency or not target_currency:
+    query = select(CurrencyORM).filter(CurrencyORM.code == base_currency_code)
+    result = await session.execute(query)
+    base_currency = result.scalar_one_or_none()
+
+    query = select(CurrencyORM).filter(CurrencyORM.code == target_currency_code)
+    result = await session.execute(query)
+    target_currency = result.scalar_one_or_none()
+
+    if base_currency is None or target_currency is None:
         return JSONResponse(
             status_code=404,
             content={"message": "Валютная пара отсутствует в базе данных"}
@@ -146,19 +179,24 @@ async def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
     base_currency_dict = base_currency.__dict__.copy()
     target_currency_dict = target_currency.__dict__.copy()
 
-    exchange_rate = session.query(ExchangeRateORM) \
+    query = select(ExchangeRateORM) \
         .join(c1, ExchangeRateORM.base_currency_id == c1.id) \
         .join(c2, ExchangeRateORM.target_currency_id == c2.id) \
-        .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
-    if not exchange_rate:
+        .filter(c1.code == base_currency_code, c2.code == target_currency_code)
+
+    result = await session.execute(query)
+
+    exchange_rate = result.scalar_one_or_none()
+
+    if exchange_rate is None:
         return JSONResponse(
             status_code=404,
             content={"message": "Обменный курс для пары не найден"}
         )
 
     exchange_rate.rate = rate
-    session.commit()
-    session.refresh(exchange_rate)
+    await session.flush()
+    await session.commit()
 
     exchange_rate_dict = exchange_rate.__dict__.copy()
 
@@ -179,31 +217,41 @@ async def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
 
 @router.delete("/{exchange_pair}", response_model=ExchangeRateResponse)
 async def delete_currency(exchange_pair: Annotated[str, Path()],
-                    session: AsyncSession = Depends(get_async_session)):
+                          session: AsyncSession = Depends(get_async_session)):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
     c1 = aliased(CurrencyORM)
     c2 = aliased(CurrencyORM)
-    exchange_rate = session.query(ExchangeRateORM) \
+
+    query = select(ExchangeRateORM) \
         .join(c1, ExchangeRateORM.base_currency_id == c1.id) \
         .join(c2, ExchangeRateORM.target_currency_id == c2.id) \
-        .filter(c1.code == base_currency_code, c2.code == target_currency_code).first()
+        .filter(c1.code == base_currency_code, c2.code == target_currency_code)
 
-    if not exchange_rate:
+    result = await session.execute(query)
+
+    exchange_rate = result.scalar_one_or_none()
+
+    if exchange_rate is None:
         return JSONResponse(status_code=404,
                             content={"message": "Обменный курс для пары не найден"})
 
-    session.delete(exchange_rate)
-    session.commit()
+    await session.delete(exchange_rate)  # correct deletion?
+    await session.commit()
 
     exchange_rate_dict = exchange_rate.__dict__.copy()
     del exchange_rate_dict["_sa_instance_state"]
 
-    base_currency = session.query(CurrencyORM).filter(
-            CurrencyORM.id == int(exchange_rate_dict["base_currency_id"])).first()
-    target_currency = session.query(CurrencyORM).filter(
-            CurrencyORM.id == int(exchange_rate_dict["target_currency_id"])).first()
+    query = select(CurrencyORM).filter(
+        CurrencyORM.id == int(exchange_rate_dict["base_currency_id"]))
+    result = await session.execute(query)
+    base_currency = result.scalar_one_or_none()
+
+    query = select(CurrencyORM).filter(
+        CurrencyORM.id == int(exchange_rate_dict["target_currency_id"]))
+    result = await session.execute(query)
+    target_currency = result.scalar_one_or_none()
 
     exchange_rate_dict["base_currency"] = base_currency.__dict__.copy()
     del exchange_rate_dict["base_currency"]["_sa_instance_state"]
