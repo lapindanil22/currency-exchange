@@ -21,6 +21,8 @@ def test_get_exchange_rates():
 def test_get_exchange_rate():
     response = requests.get("http://localhost:8000/exchangeRates/USDRUB")
     assert response.status_code == 200
+    response = requests.get("http://localhost:8000/exchangeRates/RUBUSD")
+    assert response.status_code == 404
     response = requests.get("http://localhost:8000/exchangeRates/LOLKEK")
     assert response.status_code == 404
 

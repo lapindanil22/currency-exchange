@@ -1,23 +1,26 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from currencies.schemas import CurrencyWithID
 
 
-class _ExchangeRateBase(BaseModel):
+class _ExchangeRate(BaseModel):
     rate: float  # TODO make Decimal?
 
 
-class ExchangeRateResponse(_ExchangeRateBase):
+class ExchangeRateWithCurrencies(_ExchangeRate):
     base_currency: CurrencyWithID
     target_currency: CurrencyWithID
 
+    # model_config = ConfigDict(from_attributes=True)
 
-class ExchangeRate(_ExchangeRateBase):
-    id: int
+
+class ExchangeRateWithCodePair(_ExchangeRate):
+    baseCurrencyCode: str
+    targetCurrencyCode: str
+
+
+class ExchangeRateWithID(_ExchangeRate):
     base_currency_id: int
     target_currency_id: int
 
-
-# class ExchangeRateRequest(_ExchangeRateBase):
-#     base_currency_code: str
-#     target_currency_code: str
+    model_config = ConfigDict(from_attributes=True)
