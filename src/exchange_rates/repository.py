@@ -5,71 +5,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import aliased
 
 from currencies.models import CurrencyORM
-from currencies.schemas import Currency, CurrencyWithID
+from currencies.repository import CurrencyRepository
+from currencies.schemas import CurrencyWithID
 from database import async_session_maker
-from exchange_rates.models import ExchangeRateORM
-from exchange_rates.schemas import (ExchangeRateWithCodePair, ExchangeRateWithCurrencies,
-                                    ExchangeRateWithID)
 
-
-class CurrencyRepository:
-    @classmethod
-    async def get_all(cls) -> list[CurrencyWithID]:
-        async with async_session_maker() as session:
-            query = select(CurrencyORM)
-            result = await session.execute(query)
-            currencies_orm = result.scalars().all()
-            currencies = [
-                CurrencyWithID.model_validate(currency_orm) for currency_orm in currencies_orm]
-            return currencies
-
-    @classmethod
-    async def add(cls, data: Currency) -> Optional[CurrencyWithID]:
-        async with async_session_maker() as session:
-            query = select(CurrencyORM).filter(CurrencyORM.code == data.code)
-            result = await session.execute(query)
-            if result.scalar_one_or_none() is not None:
-                return None
-            currency_dict = data.model_dump()
-            currency_orm = CurrencyORM(**currency_dict)
-            session.add(currency_orm)
-            await session.flush()
-            await session.commit()
-            return currency_orm
-
-    @classmethod
-    async def get_by_code(cls, code: str) -> Optional[CurrencyWithID]:
-        async with async_session_maker() as session:
-            query = select(CurrencyORM).filter(CurrencyORM.code == code)
-            result = await session.execute(query)
-            currency_orm = result.scalar_one_or_none()
-            if currency_orm is None:
-                return None
-            currency = CurrencyWithID.model_validate(currency_orm)
-            return currency
-
-    @classmethod
-    async def get_by_id(cls, id: int) -> Optional[CurrencyWithID]:
-        async with async_session_maker() as session:
-            query = select(CurrencyORM).filter(CurrencyORM.id == id)
-            result = await session.execute(query)
-            currency_orm = result.scalar_one_or_none()
-            if currency_orm is None:
-                return None
-            currency = CurrencyWithID.model_validate(currency_orm)
-            return currency
-
-    @classmethod
-    async def delete(cls, code: str) -> Optional[CurrencyWithID]:
-        async with async_session_maker() as session:
-            query = select(CurrencyORM).filter(CurrencyORM.code == code)
-            result = await session.execute(query)
-            currency = result.scalar_one_or_none()
-            if currency is None:
-                return None
-            await session.delete(currency)
-            await session.commit()
-            return currency
+from .models import ExchangeRateORM
+from .schemas import ExchangeRateWithCodePair, ExchangeRateWithCurrencies, ExchangeRateWithID
 
 
 class ExchangeRateRepository:
@@ -80,7 +21,8 @@ class ExchangeRateRepository:
             result = await session.execute(query)
             exchange_rates_orm = result.scalars().all()
             exchange_rates = [
-                ExchangeRateWithID.model_validate(exchange_rate) for exchange_rate in exchange_rates_orm]
+                ExchangeRateWithID.model_validate(exchange_rate) for exchange_rate in exchange_rates_orm
+            ]
 
             exchange_rates_response: list[ExchangeRateWithCurrencies] = []
 
@@ -97,21 +39,25 @@ class ExchangeRateRepository:
                 target_currency_orm = result.scalar_one()
                 target_currency = CurrencyWithID.model_validate(target_currency_orm)
 
-                exchange_rate_response = ExchangeRateWithCurrencies(rate=exchange_rate.rate,
-                                                              base_currency=base_currency,
-                                                              target_currency=target_currency)
+                exchange_rate_response = ExchangeRateWithCurrencies(
+                    rate=exchange_rate.rate,
+                    base_currency=base_currency,
+                    target_currency=target_currency
+                )
 
                 exchange_rates_response.append(exchange_rate_response)
 
             return exchange_rates_response
 
     @classmethod
-    async def add(cls, exchange_rate: ExchangeRateWithCodePair) -> Optional[ExchangeRateWithCurrencies]:
+    async def add(cls,
+                  exchange_rate: ExchangeRateWithCodePair) -> Optional[ExchangeRateWithCurrencies]:
         async with async_session_maker() as session:
             base_currency = await CurrencyRepository.get_by_code(exchange_rate.baseCurrencyCode)
             target_currency = await CurrencyRepository.get_by_code(exchange_rate.targetCurrencyCode)
 
             if base_currency is None or target_currency is None:
+                # TODO Exception handling
                 # 404 - Одна (или обе) валюта из валютной пары не существует в БД
                 return None
 
@@ -123,16 +69,20 @@ class ExchangeRateRepository:
                 # 409 - Валютная пара с таким кодом уже существует
                 return None
 
-            exchange_rate_orm = ExchangeRateORM(base_currency_id=base_currency.id,
-                                                target_currency_id=target_currency.id,
-                                                rate=exchange_rate.rate)
+            exchange_rate_orm = ExchangeRateORM(
+                base_currency_id=base_currency.id,
+                target_currency_id=target_currency.id,
+                rate=exchange_rate.rate
+            )
             session.add(exchange_rate_orm)
             await session.flush()
             await session.commit()
 
-            exchange_rate_response = ExchangeRateWithCurrencies(base_currency=base_currency,
-                                                          target_currency=target_currency,
-                                                          rate=exchange_rate.rate)
+            exchange_rate_response = ExchangeRateWithCurrencies(
+                base_currency=base_currency,
+                target_currency=target_currency,
+                rate=exchange_rate.rate
+            )
 
             return exchange_rate_response
 
@@ -173,9 +123,11 @@ class ExchangeRateRepository:
             target_currency_orm = result.scalar_one()
             target_currency = CurrencyWithID.model_validate(target_currency_orm)
 
-            exchange_rate_response = ExchangeRateWithCurrencies(rate=exchange_rate.rate,
-                                                          base_currency=base_currency,
-                                                          target_currency=target_currency)
+            exchange_rate_response = ExchangeRateWithCurrencies(
+                rate=exchange_rate.rate,
+                base_currency=base_currency,
+                target_currency=target_currency
+            )
 
             return exchange_rate_response
 
@@ -192,22 +144,24 @@ class ExchangeRateRepository:
                 # 404 - Валютная пара отсутствует в базе данных
                 return None
 
-            exchange_rate_with_currencies = await ExchangeRateRepository.get_by_pair(base_currency_code,
-                                                                                    target_currency_code)
+            exchange_rate_with_currencies = await ExchangeRateRepository.get_by_pair(
+                base_currency_code,
+                target_currency_code
+            )
 
             if exchange_rate_with_currencies is None:
                 # 404 - Обменный курс для пары не найден
                 return None
 
             query = select(ExchangeRateORM).filter(
-                ExchangeRateORM.base_currency_id == int(exchange_rate_with_currencies.base_currency.id),
-                ExchangeRateORM.target_currency_id == int(exchange_rate_with_currencies.target_currency.id)
+                ExchangeRateORM.base_currency_id == exchange_rate_with_currencies.base_currency.id,
+                ExchangeRateORM.target_currency_id == exchange_rate_with_currencies.target_currency.id
             )
             result = await session.execute(query)
             exchange_rate_orm = result.scalar_one()
 
             exchange_rate_orm.rate = Decimal(new_rate)
-            await session.flush()
+            # await session.flush()
             await session.commit()
 
             exchange_rate_with_currencies = await ExchangeRateRepository.get_by_pair(

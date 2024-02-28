@@ -3,8 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Path
 from fastapi.responses import JSONResponse
 
-from repository import CurrencyRepository
-
+from .repository import CurrencyRepository
 from .schemas import Currency, CurrencyWithID
 
 router = APIRouter(
