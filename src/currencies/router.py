@@ -41,8 +41,9 @@ async def get_currency_empty(code: Annotated[str, Path()]):
 
 @router.delete("/{code}", response_model=CurrencyWithID)
 async def delete_currency(code: Annotated[str, Path()]):
-    currency = await CurrencyRepository.delete(code=code)
-    if currency is None:
+    try:
+        currency = await CurrencyRepository.delete(code=code)
+    except CurrencyNotFound:
         return JSONResponse(status_code=404,
                             content={"message": "Валюта не найдена"})
     return currency
