@@ -1,5 +1,4 @@
 from decimal import Decimal
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import aliased
@@ -52,7 +51,7 @@ class ExchangeRateRepository:
 
     @classmethod
     async def add(cls,
-                  exchange_rate: ExchangeRateWithCodePair) -> Optional[ExchangeRateWithCurrencies]:
+                  exchange_rate: ExchangeRateWithCodePair) -> ExchangeRateWithCurrencies:
         async with async_session_maker() as session:
             try:
                 base_currency = await CurrencyRepository.get_by_code(
@@ -114,7 +113,7 @@ class ExchangeRateRepository:
     @classmethod
     async def get_by_pair(cls,
                           base_currency_code,
-                          target_currency_code) -> Optional[ExchangeRateWithCurrencies]:
+                          target_currency_code) -> ExchangeRateWithCurrencies:
         async with async_session_maker() as session:
             base_currency_alias = aliased(CurrencyORM)
             target_curency_alias = aliased(CurrencyORM)
@@ -160,7 +159,7 @@ class ExchangeRateRepository:
     async def patch_by_pair(cls,
                             base_currency_code,
                             target_currency_code,
-                            new_rate) -> Optional[ExchangeRateWithCurrencies]:
+                            new_rate) -> ExchangeRateWithCurrencies:
         async with async_session_maker() as session:
             try:
                 await CurrencyRepository.get_by_code(base_currency_code)
@@ -197,7 +196,7 @@ class ExchangeRateRepository:
     @classmethod
     async def delete_by_pair(cls,
                              base_currency_code,
-                             target_currency_code) -> Optional[ExchangeRateWithCurrencies]:
+                             target_currency_code) -> ExchangeRateWithCurrencies:
         async with async_session_maker() as session:
             try:
                 exchange_rate = await ExchangeRateRepository.get_by_pair(
@@ -205,8 +204,7 @@ class ExchangeRateRepository:
                     target_currency_code
                 )
             except ExchangeRateNotFound:
-                # 404 - Обменный курс для пары не найден
-                return None
+                raise ExchangeRateNotFound
 
             base_currency_alias = aliased(CurrencyORM)
             target_curency_alias = aliased(CurrencyORM)

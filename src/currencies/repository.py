@@ -1,5 +1,3 @@
-from typing import Optional
-
 from sqlalchemy import select
 
 from database import async_session_maker
@@ -23,7 +21,7 @@ class CurrencyRepository:
             return currencies
 
     @classmethod
-    async def add(cls, data: Currency) -> Optional[CurrencyWithID]:
+    async def add(cls, data: Currency) -> CurrencyWithID:
         async with async_session_maker() as session:
             query = select(CurrencyORM).filter(CurrencyORM.code == data.code)
             result = await session.execute(query)
@@ -40,7 +38,7 @@ class CurrencyRepository:
             return currency_orm
 
     @classmethod
-    async def get_by_code(cls, code: str) -> Optional[CurrencyWithID]:
+    async def get_by_code(cls, code: str) -> CurrencyWithID:
         async with async_session_maker() as session:
             query = select(CurrencyORM).filter(CurrencyORM.code == code)
             result = await session.execute(query)
@@ -53,27 +51,27 @@ class CurrencyRepository:
             return currency
 
     @classmethod
-    async def get_by_id(cls, id: int) -> Optional[CurrencyWithID]:
+    async def get_by_id(cls, id: int) -> CurrencyWithID:
         async with async_session_maker() as session:
             query = select(CurrencyORM).filter(CurrencyORM.id == id)
             result = await session.execute(query)
             currency_orm = result.scalar_one_or_none()
 
             if currency_orm is None:
-                return None
+                raise CurrencyNotFound
 
             currency = CurrencyWithID.model_validate(currency_orm)
             return currency
 
     @classmethod
-    async def delete(cls, code: str) -> Optional[CurrencyWithID]:
+    async def delete(cls, code: str) -> CurrencyWithID:
         async with async_session_maker() as session:
             query = select(CurrencyORM).filter(CurrencyORM.code == code)
             result = await session.execute(query)
             currency = result.scalar_one_or_none()
 
             if currency is None:
-                return None
+                raise CurrencyNotFound
 
             await session.delete(currency)
             await session.commit()

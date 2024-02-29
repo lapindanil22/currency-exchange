@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Path
 from fastapi.responses import JSONResponse
 
-from exceptions import CurrencyNotFound, EntityExistsError, EntityNotFound, ExchangeRateNotFound
+from exceptions import CurrencyNotFound, EntityExistsError, ExchangeRateNotFound
 
 from .repository import ExchangeRateRepository
 from .schemas import ExchangeRateWithCodePair, ExchangeRateWithCurrencies
@@ -63,11 +63,15 @@ async def patch_exchange_rate(exchange_pair: Annotated[str, Path()],
             target_currency_code,
             new_rate
         )
-    except EntityNotFound:
+    except CurrencyNotFound:
         return JSONResponse(
-            # 404 / 404 respectively
             status_code=404,
-            content={"message": "Валютная пара отсутствует в базе данных / Обменный курс для пары не найден"}
+            content={"message": "Одна (или обе) валюта из валютной пары не существует в БД"}
+        )
+    except ExchangeRateNotFound:
+        return JSONResponse(
+            status_code=404,
+            content={"message": "Обменный курс для пары не найден"}
         )
     return exchange_rate
 
@@ -77,15 +81,14 @@ async def delete_currency(exchange_pair: Annotated[str, Path()]):
     base_currency_code = exchange_pair[:3]
     target_currency_code = exchange_pair[3:]
 
-    exchange_rate = await ExchangeRateRepository.delete_by_pair(
-        base_currency_code,
-        target_currency_code
-    )
-
-    if exchange_rate is None:
+    try:
+        exchange_rate = await ExchangeRateRepository.delete_by_pair(
+            base_currency_code,
+            target_currency_code
+        )
+    except ExchangeRateNotFound:
         return JSONResponse(
             status_code=404,
             content={"message": "Обменный курс для пары не найден"}
         )
-
     return exchange_rate
