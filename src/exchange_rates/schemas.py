@@ -4,7 +4,7 @@ from currencies.schemas import CurrencyWithID
 
 
 class _ExchangeRate(BaseModel):
-    rate: float  # TODO make Decimal?
+    rate: float
 
 
 class ExchangeRateWithCurrencies(_ExchangeRate):

@@ -51,14 +51,6 @@ async def get_exchange(baseCode: Annotated[str, Query()],
             content={"message": "Обменный курс для пары не найден"}
         )
 
-    query = select(CurrencyORM).filter(CurrencyORM.code == baseCode)
-    result = await session.execute(query)
-    base_currency = result.scalar_one()
-
-    query = select(CurrencyORM).filter(CurrencyORM.code == targetCode)
-    result = await session.execute(query)
-    target_currency = result.scalar_one()
-
     base_currency_dict = base_currency.__dict__.copy()
     target_currency_dict = target_currency.__dict__.copy()
 
