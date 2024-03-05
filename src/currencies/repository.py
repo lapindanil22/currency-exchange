@@ -51,17 +51,16 @@ class CurrencyRepository:
             return currency
 
     @classmethod
-    async def get_by_id(cls, id: int) -> CurrencyWithID:
+    async def exists_by_code(cls, code: str) -> bool:
         async with async_session_maker() as session:
-            query = select(CurrencyORM).filter(CurrencyORM.id == id)
+            query = select(CurrencyORM).filter(CurrencyORM.code == code)
             result = await session.execute(query)
             currency_orm = result.scalar_one_or_none()
 
             if currency_orm is None:
-                raise CurrencyNotFound
-
-            currency = CurrencyWithID.model_validate(currency_orm)
-            return currency
+                return False
+            else:
+                return True
 
     @classmethod
     async def delete(cls, code: str) -> CurrencyWithID:

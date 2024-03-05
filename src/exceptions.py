@@ -2,13 +2,13 @@ class EntityExistsError(BaseException):
     pass
 
 
-class EntityNotFound(BaseException):
+class _EntityNotFound(BaseException):
     pass
 
 
-class CurrencyNotFound(EntityNotFound):
+class CurrencyNotFound(_EntityNotFound):
     pass
 
 
-class ExchangeRateNotFound(EntityNotFound):
+class ExchangeRateNotFound(_EntityNotFound):
     pass

@@ -7,16 +7,14 @@ class _ExchangeRate(BaseModel):
     rate: float
 
 
+class ExchangeRate(_ExchangeRate):
+    baseCurrencyCode: str
+    targetCurrencyCode: str
+
+
 class ExchangeRateWithCurrencies(_ExchangeRate):
     base_currency: CurrencyWithID
     target_currency: CurrencyWithID
-
-    # model_config = ConfigDict(from_attributes=True)
-
-
-class ExchangeRateWithCodePair(_ExchangeRate):
-    baseCurrencyCode: str
-    targetCurrencyCode: str
 
 
 class ExchangeRateWithID(_ExchangeRate):

@@ -17,10 +17,7 @@ from exchange_rates.router import router as router_exchange_rates
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    print("База очищена")
-    print("База готова к работе")
     yield
-    print("Выключение")
 
 
 app = FastAPI(

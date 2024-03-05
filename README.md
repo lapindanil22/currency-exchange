@@ -8,14 +8,7 @@ cd src
 uvicorn main:app
 ```
 
-### With Docker
-
-#### Create Docker image
+### With Docker Compose
 ```
-docker build -t currency-exchange .
-```
-
-#### Run Docker container
-```
-docker run -p 8000:8000 currency-exchange
+docker compose -f docker-compose.yaml up
 ```

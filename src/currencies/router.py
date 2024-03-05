@@ -31,7 +31,7 @@ async def post_currency(currency: Annotated[Currency, Body()]):
 
 
 @router.get("/{code}", response_model=CurrencyWithID)
-async def get_currency_empty(code: Annotated[str, Path()]):
+async def get_currency(code: Annotated[str, Path()]):
     try:
         currency = await CurrencyRepository.get_by_code(code=code)
     except CurrencyNotFound:

@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from exceptions import CurrencyNotFound, EntityExistsError, ExchangeRateNotFound
 
 from .repository import ExchangeRateRepository
-from .schemas import ExchangeRateWithCodePair, ExchangeRateWithCurrencies
+from .schemas import ExchangeRate, ExchangeRateWithCurrencies
 
 router = APIRouter(
     prefix="/exchangeRates",
@@ -21,7 +21,7 @@ async def get_exchange_rates():
 
 
 @router.post("", response_model=ExchangeRateWithCurrencies)
-async def post_exchange_rate(exchange_rate: Annotated[ExchangeRateWithCodePair, Body()]):
+async def post_exchange_rate(exchange_rate: Annotated[ExchangeRate, Body()]):
     try:
         exchange_rate_response = await ExchangeRateRepository.add(exchange_rate)
     except EntityExistsError:
