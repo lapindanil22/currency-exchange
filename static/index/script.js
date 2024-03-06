@@ -269,8 +269,8 @@ function exchangeRateRow(exchangeRate) {
 
 // on full page load
 document.addEventListener("DOMContentLoaded", function() {
-    getCurrencies();
-    getExchangeRates();
+    // getCurrencies();
+    // getExchangeRates();
 
     document.getElementById("exchangeButton").addEventListener("click", exchange);
     document.getElementById("addCurrency").addEventListener("click", addCurrency);

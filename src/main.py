@@ -1,17 +1,20 @@
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from currencies.models import CurrencyORM
-from currencies.router import router as router_currencies
+from currencies.router import get_currencies, router as router_currencies
+from currencies.schemas import CurrencyWithID
 from database import async_session_maker, create_all_tables, drop_all_tables
 from exchange.router import router as router_exchange
 from exchange_rates.models import ExchangeRateORM
-from exchange_rates.router import router as router_exchange_rates
+from exchange_rates.router import get_exchange_rates, router as router_exchange_rates
+from exchange_rates.schemas import ExchangeRateWithCurrencies, ExchangeRateWithID
 
 
 @asynccontextmanager
@@ -20,10 +23,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(
-    title="Currency Exchange",
-    lifespan=lifespan
-)
+app = FastAPI(title="Currency Exchange", lifespan=lifespan)
 
 app.include_router(router_currencies)
 app.include_router(router_exchange_rates)
@@ -32,9 +32,7 @@ app.include_router(router_exchange)
 app.mount("/static", StaticFiles(directory="../static"), name="static")
 templates = Jinja2Templates(directory="../templates")
 
-origins = [
-    "http://localhost",
-]
+origins = ["http://localhost"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,10 +44,11 @@ app.add_middleware(
 
 
 @app.get("/", response_class=HTMLResponse)
-def main(request: Request):
+async def main(request: Request,
+               currencies: Annotated[list[CurrencyWithID], Depends(get_currencies)],
+               exchange_rates: Annotated[list[ExchangeRateWithCurrencies], Depends(get_exchange_rates)]):
     return templates.TemplateResponse(
-        request=request,
-        name="index.html"
+        "index.html", {"request": request, "currencies": currencies, "exchangeRates": exchange_rates}
     )
 
 

@@ -6,6 +6,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="{{ url_for('static', path='index/script.js') }}"></script>
   <link href="{{ url_for('static', path='index/styles.css') }}" rel="stylesheet">
+  <script>
+    async function deleteCurrency(code) {
+      await fetch(`/currencies/${code}`, {
+        method: "DELETE",
+        headers: { "Accept": "application/json" }
+      })
+      location.reload();
+    }
+    async function deleteExchangeRate(pair) {
+      await fetch(`/exchangeRates/${pair}`, {
+        method: "DELETE",
+        headers: { "Accept": "application/json" }
+      })
+      location.reload();
+    }
+    async function editModeExchangeRate(baseCurrencyCode, targetCurrencyCode, rate) {
+      document.getElementById("exchangeRatePair").value = baseCurrencyCode + targetCurrencyCode;
+      document.getElementById("baseCurrencyCode").value = baseCurrencyCode;
+      document.getElementById("targetCurrencyCode").value = targetCurrencyCode;
+      document.getElementById("exchangeRate").value = rate;
+    }
+  </script>
 </head>
 <body>
   <h3>Currencies (<a href="/currencies">JSON</a>)</h3>
@@ -14,11 +36,19 @@
         <tr>
           <th>Name</th>
           <th>Code</th>
-          <th>Sign</th>
-          <th>actions</th>
+          <th>Sign</th> 
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="currenciesTBody">
+        {% for currency in currencies -%}
+        <tr>
+          <td>{{ currency.name }}</td>
+          <td><a href="/currencies/{{ currency.code }}">{{ currency.code }}</a></td>
+          <td>{{ currency.sign }}</td>
+          <td><input type="button" onclick="deleteCurrency('{{ currency.code }}')" value="delete"></td>
+        </tr>
+        {% endfor %}
       </tbody>
   </table>
 
@@ -42,10 +72,20 @@
         <tr>
           <th>Pair</th>
           <th>Rate</th>
-          <th>actions</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="exchangeTBody"">
+        {% for exchangeRate in exchangeRates -%}
+        <tr>
+          <td><a href="/exchangeRates/{{ exchangeRate.base_currency.code }}{{ exchangeRate.target_currency.code }}">{{ exchangeRate.base_currency.code }}/{{ exchangeRate.target_currency.code }}</td>
+          <td>{{ exchangeRate.rate }}</td>
+          <td>
+            <input type="button" onclick="editModeExchangeRate('{{ exchangeRate.base_currency.code }}', '{{ exchangeRate.target_currency.code }}', '{{ exchangeRate.rate }}')" value="edit">
+            <input type="button" onclick="deleteExchangeRate('{{ exchangeRate.base_currency.code }}{{ exchangeRate.target_currency.code }}')" value="delete">
+          </td>
+        </tr>
+        {% endfor %}
       </tbody>
   </table>
 
